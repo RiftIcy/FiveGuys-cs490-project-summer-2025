@@ -1535,20 +1535,6 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
             </div>
           </Indicator>
 
-          {contact.emails && contact.emails.length > 1 && (
-            <>
-              <Text mt="sm">
-                <strong>Other Emails:</strong>
-              </Text>
-              <Group>
-                {contact.emails.slice(1).map((email, index) => (
-                  <Badge key={index} color="gray">
-                    {email}
-                  </Badge>
-                ))}
-              </Group>
-            </>
-          )}
 
           {/* Phone Section */}
           <Title order={3} mt="lg">
@@ -1601,7 +1587,6 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
       )}
 
       {/* Career Objectives */}
-      {career_objective?.trim() && (
         <Indicator color="red" disabled={!dirty.objective} position="top-end">
           <Card withBorder mb="md" shadow="sm">
             <Title order={3}>Career Objective</Title>
@@ -1639,7 +1624,6 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
             </Group>
           </Card>
         </Indicator>
-      )}
 
       {/* Skills */}
       {skillsState && (
