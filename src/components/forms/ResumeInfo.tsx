@@ -20,6 +20,7 @@ import {
   Collapse,
   UnstyledButton,
   Loader,
+  Indicator,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
@@ -439,6 +440,12 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
   const hasNoneAdded =
     (!jobDraft?.responsibilities || jobDraft.responsibilities.length === 0) &&
     (!jobDraft?.accomplishments || jobDraft.accomplishments.length === 0);
+  const hasAnyEmptyResponsibility = jobDraft
+    ? jobDraft.responsibilities.some((r) => !r.trim())
+    : false;
+  const hasAnyEmptyAccomplishment = jobDraft
+    ? jobDraft.accomplishments.some((a) => !a.trim())
+    : false;
   const isJobSaveDisabled =
     !!locationError ||
     !jobDraft?.title?.trim() ||
@@ -449,6 +456,8 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
     endFormatError ||
     isDateInvalid ||
     !!roleSummaryError ||
+    hasAnyEmptyResponsibility ||
+    hasAnyEmptyAccomplishment ||
     hasEmptyResponsibilitiesAndAccomplishments;
 
   const dragDisabled = editingIndex !== null && isJobSaveDisabled;
@@ -484,6 +493,24 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
     jobs: false,
   });
 
+  // at top of component
+  const [dirty, setDirty] = useState({
+    emails: false,
+    phones: false,
+    objective: false,
+    skills: false,
+    jobs: false,
+    education: false,
+  });
+
+  // For an unsaved category
+  function markDirty(section: keyof typeof dirty) {
+    setDirty((d) => ({ ...d, [section]: true }));
+  }
+  function clearDirty(section: keyof typeof dirty) {
+    setDirty((d) => ({ ...d, [section]: false }));
+  }
+
   const validateEmails = (emails: string[]) => {
     return emails.map((email) => {
       const trimmed = email.trim();
@@ -494,6 +521,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
   };
 
   const updateEmailAtIndex = (index: number, value: string) => {
+    markDirty("emails");
     const updated = [...emails];
     updated[index] = value;
     setEmails(updated);
@@ -559,6 +587,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
       const resData = await response.json();
 
       if (response.ok) {
+        clearDirty("emails");
         notifications.show({
           title: "Success",
           message: "Emails saved successfully.",
@@ -605,6 +634,8 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
   };
 
   const updatePhoneAtIndex = (index: number, value: string) => {
+    markDirty("phones");
+
     const formatted = formatPhone(value);
     const updated = [...phones];
     updated[index] = formatted;
@@ -664,6 +695,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
 
       const resData = await response.json();
       if (response.ok) {
+        clearDirty("phones");
         notifications.show({
           title: "Success",
           message: "Phones saved.",
@@ -710,6 +742,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
 
       const resData = await response.json();
       if (response.ok) {
+        clearDirty("objective");
         notifications.show({
           title: "Success",
           message: "Career objective saved successfully.",
@@ -734,6 +767,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
   };
 
   const removeSkill = (category: string, skill: string) => {
+    markDirty("skills");
     setSkillsState((prev) => {
       const updated = { ...prev };
       updated[category] = updated[category].filter((s) => s !== skill);
@@ -742,6 +776,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
   };
 
   const removeCategory = (category: string) => {
+    markDirty("skills");
     setSkillsState((prev) => {
       const updated = { ...prev };
       delete updated[category];
@@ -756,6 +791,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
   };
 
   const saveNewSkill = (category: string) => {
+    markDirty("skills");
     const newSkill = newSkillValues[category]?.trim();
     const lowerSkill = newSkill?.toLowerCase() || "";
 
@@ -825,6 +861,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
 
     if (hasError) return;
 
+    markDirty("skills");
     setSkillsState((prev) => ({ ...prev, [trimmedCategory]: [trimmedSkill] }));
     setCategoryOrder((prev) => [...prev, trimmedCategory]);
 
@@ -836,6 +873,8 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    markDirty("skills");
+
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
@@ -902,6 +941,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
       const resData = await response.json();
 
       if (response.ok) {
+        clearDirty("skills");
         notifications.show({
           title: "Success",
           message: "Skills saved successfully.",
@@ -929,6 +969,8 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
+    markDirty("skills");
+
     const oldIndex = categoryOrder.indexOf(active.id as string);
     const newIndex = categoryOrder.indexOf(over.id as string);
 
@@ -952,6 +994,9 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
   const handleJobDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
+
+    markDirty("jobs");
+
     const oldIndex = Number(active.id);
     const newIndex = Number(over.id);
 
@@ -978,6 +1023,8 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
   }
 
   function cancelEdit() {
+    clearDirty("jobs");
+
     if (editingIndex === null) return;
 
     if (editingIndex >= originalJobs.length) {
@@ -1029,6 +1076,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
 
       const result = await response.json();
       if (response.ok) {
+        clearDirty("jobs");
         notifications.show({
           title: "Success",
           message: isNewJob
@@ -1117,6 +1165,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
           color: "red",
         });
       } else {
+        clearDirty("jobs");
         notifications.show({
           title: "Success",
           message: "Job order saved!",
@@ -1137,6 +1186,8 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
   };
 
   const deleteJob = async (index: number) => {
+    markDirty("jobs");
+
     const isNew = index >= originalJobs.length;
     // If it's a new/unsaved job, just remove from jobsState.
     if (isNew) {
@@ -1166,6 +1217,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
           color: "red",
         });
       } else {
+        clearDirty("jobs");
         notifications.show({
           title: "Success",
           message: "Job deleted!",
@@ -1194,7 +1246,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
     if (editingEduIndex === idx) {
       setEditingEduIndex(null);
       setEduDraft(null);
-      setGpaInput("");  
+      setGpaInput("");
     } else {
       const entry = edusState[idx];
       setEditingEduIndex(idx);
@@ -1204,6 +1256,8 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
   }
 
   function cancelEduEdit() {
+    clearDirty("education");
+
     if (editingEduIndex === null) return;
     if (editingEduIndex >= originalEdus.length) {
       setEdusState((prev) => prev.filter((_, i) => i !== editingEduIndex));
@@ -1260,6 +1314,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
       });
       setEditingEduIndex(null);
       setEduDraft(null);
+      clearDirty("education");
       notifications.show({
         title: "Success",
         message: isNew ? "Education added" : "Education updated",
@@ -1278,6 +1333,9 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
   const handleEduDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
+
+    markDirty("education");
+
     const oldIndex = Number(active.id),
       newIndex = Number(over.id);
     setEdusState((prev) => arrayMove(prev, oldIndex, newIndex));
@@ -1298,40 +1356,56 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
       }
     );
     const js = await res.json();
-    if (!res.ok)
+    if (!res.ok) {
       notifications.show({ title: "Error", message: js.error, color: "red" });
-    else
+    } else {
+      clearDirty("education");
       notifications.show({
         title: "Success",
         message: "Education order saved",
         color: "teal",
       });
+    }
     setSavingEduOrder(false);
   }
 
   async function deleteEdu(idx: number) {
+    markDirty("education");
+
     const isNew = idx >= originalEdus.length;
     if (isNew) {
       return setEdusState((prev) => prev.filter((_, i) => i !== idx));
     }
+
     setSaving((prev) => ({ ...prev, jobs: true }));
-    const res = await fetch(
-      `http://localhost:5000/resume/${data._id}/delete_education/${idx}`,
-      { method: "DELETE" }
-    );
-    if (res.ok) {
-      setEdusState((prev) => prev.filter((_, i) => i !== idx));
-      setOriginalEdus((prev) => prev.filter((_, i) => i !== idx));
-      notifications.show({
-        title: "Success",
-        message: "Education deleted",
-        color: "teal",
-      });
-    } else {
+    try {
+      const res = await fetch(
+        `http://localhost:5000/resume/${data._id}/delete_education/${idx}`,
+        { method: "DELETE" }
+      );
       const js = await res.json();
-      notifications.show({ title: "Error", message: js.error, color: "red" });
+      if (!res.ok) {
+        notifications.show({ title: "Error", message: js.error, color: "red" });
+      } else {
+        clearDirty("education");
+
+        setEdusState((prev) => prev.filter((_, i) => i !== idx));
+        setOriginalEdus((prev) => prev.filter((_, i) => i !== idx));
+        notifications.show({
+          title: "Success",
+          message: "Education deleted",
+          color: "teal",
+        });
+      }
+    } catch {
+      notifications.show({
+        title: "Error",
+        message: "Delete failed",
+        color: "red",
+      });
+    } finally {
+      setSaving((prev) => ({ ...prev, jobs: false }));
     }
-    setSaving((prev) => ({ ...prev, jobs: false }));
   }
 
   return (
@@ -1354,51 +1428,64 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
           <Title order={3}>Contact Information</Title>
 
           {/* Email Section */}
-          {emails.map((email, index) => (
-            <Group key={index} mt={index === 0 ? "sm" : "xs"} align="flex-end">
-              <Autocomplete
-                style={{ flex: 1 }}
-                label={index === 0 ? "Primary Email" : `Email ${index + 1}`}
-                withAsterisk={index === 0}
-                value={email}
-                onChange={(value) => updateEmailAtIndex(index, value)}
-                placeholder={`Email ${index + 1}`}
-                error={emailErrors[index] || undefined}
-                data={
-                  email && email.includes("@")
-                    ? []
-                    : ["@gmail.com", "@yahoo.com", "@outlook.com", "@njit.edu"]
-                        .map((domain) => {
-                          const prefix = email.trim();
-                          return prefix ? prefix + domain : "";
-                        })
-                        .filter(Boolean)
-                }
-              />
-              <ActionIcon
-                color="red"
-                variant="light"
-                onClick={() => removeEmail(index)}
-                disabled={emails.length === 1}
-                title="Remove this email"
-              >
-                <IconTrash size="1rem" />
-              </ActionIcon>
-            </Group>
-          ))}
-          {/* Button to add new emails */}
-          <Group mt="sm">
-            <Button variant="light" onClick={addNewEmail}>
-              + Add Email
-            </Button>
-            <Button
-              onClick={saveEmails}
-              loading={saving.emails}
-              disabled={emailErrors.some((e) => e !== null)}
-            >
-              Save Emails
-            </Button>
-          </Group>
+          <Indicator color="red" disabled={!dirty.emails} position="top-end">
+            <div>
+              {emails.map((email, index) => (
+                <Group
+                  key={index}
+                  mt={index === 0 ? "sm" : "xs"}
+                  align="flex-end"
+                >
+                  <Autocomplete
+                    style={{ flex: 1 }}
+                    label={index === 0 ? "Primary Email" : `Email ${index + 1}`}
+                    withAsterisk={index === 0}
+                    value={email}
+                    onChange={(value) => updateEmailAtIndex(index, value)}
+                    placeholder={`Email ${index + 1}`}
+                    error={emailErrors[index] || undefined}
+                    data={
+                      email && email.includes("@")
+                        ? []
+                        : [
+                            "@gmail.com",
+                            "@yahoo.com",
+                            "@outlook.com",
+                            "@njit.edu",
+                          ]
+                            .map((domain) => {
+                              const prefix = email.trim();
+                              return prefix ? prefix + domain : "";
+                            })
+                            .filter(Boolean)
+                    }
+                  />
+                  <ActionIcon
+                    color="red"
+                    variant="light"
+                    onClick={() => removeEmail(index)}
+                    disabled={emails.length === 1}
+                    title="Remove this email"
+                  >
+                    <IconTrash size="1rem" />
+                  </ActionIcon>
+                </Group>
+              ))}
+              {/* Button to add new emails */}
+              <Group mt="sm">
+                <Button variant="light" onClick={addNewEmail}>
+                  + Add Email
+                </Button>
+                <Button
+                  onClick={saveEmails}
+                  loading={saving.emails}
+                  disabled={emailErrors.some((e) => e !== null)}
+                >
+                  Save Emails
+                </Button>
+              </Group>
+            </div>
+          </Indicator>
 
           {contact.emails && contact.emails.length > 1 && (
             <>
@@ -1419,368 +1506,383 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
           <Title order={3} mt="lg">
             Phone Numbers
           </Title>
-          {phones.map((phone, index) => (
-            <Group key={index} mt="xs" align="flex-end">
-              <TextInput
-                style={{ flex: 1 }}
-                label={index === 0 ? "Primary Phone" : `Phone ${index + 1}`}
-                withAsterisk={index === 0}
-                value={phone}
-                onChange={(e) =>
-                  updatePhoneAtIndex(index, e.currentTarget.value)
-                }
-                error={phoneErrors[index] || undefined}
-              />
-              <ActionIcon
-                color="red"
-                variant="light"
-                onClick={() => removePhone(index)}
-                disabled={phones.length === 1}
-                title="Remove this phone"
-              >
-                <IconTrash size="1rem" />
-              </ActionIcon>
-            </Group>
-          ))}
-          {/* Button to add new phone numbers */}
-          <Group mt="sm">
-            <Button variant="light" onClick={addNewPhone}>
-              + Add Phone
-            </Button>
-            <Button
-              onClick={savePhones}
-              loading={saving.phones}
-              disabled={
-                phoneErrors.some((e) => e !== null) ||
-                phones.every((p) => p.trim() === "")
-              }
-            >
-              Save Phones
-            </Button>
-          </Group>
+          <Indicator color="red" disabled={!dirty.phones} position="top-end">
+            <div>
+              {phones.map((phone, index) => (
+                <Group key={index} mt="xs" align="flex-end">
+                  <TextInput
+                    style={{ flex: 1 }}
+                    label={index === 0 ? "Primary Phone" : `Phone ${index + 1}`}
+                    withAsterisk={index === 0}
+                    value={phone}
+                    onChange={(e) =>
+                      updatePhoneAtIndex(index, e.currentTarget.value)
+                    }
+                    error={phoneErrors[index] || undefined}
+                  />
+                  <ActionIcon
+                    color="red"
+                    variant="light"
+                    onClick={() => removePhone(index)}
+                    disabled={phones.length === 1}
+                    title="Remove this phone"
+                  >
+                    <IconTrash size="1rem" />
+                  </ActionIcon>
+                </Group>
+              ))}
+              {/* Button to add new phone numbers */}
+              <Group mt="sm">
+                <Button variant="light" onClick={addNewPhone}>
+                  + Add Phone
+                </Button>
+                <Button
+                  onClick={savePhones}
+                  loading={saving.phones}
+                  disabled={
+                    phoneErrors.some((e) => e !== null) ||
+                    phones.every((p) => p.trim() === "")
+                  }
+                >
+                  Save Phones
+                </Button>
+              </Group>
+            </div>
+          </Indicator>
         </Card>
       )}
 
       {/* Career Objectives */}
       {career_objective?.trim() && (
-        <Card withBorder mb="md" shadow="sm">
-          <Title order={3}>Career Objective</Title>
-          <Textarea
-            mt="sm"
-            autosize
-            minRows={3}
-            label="Career Objective"
-            withAsterisk
-            placeholder="Enter your career objective"
-            value={objective}
-            onChange={(e) => {
-              const value = e.currentTarget.value;
-              setObjective(value);
-              setObjectiveError(
-                value.trim() ? null : "Career objective is required"
-              );
-            }}
-            onBlur={() => {
-              if (!objective.trim()) {
-                setObjectiveError("Career objective is required");
-              }
-            }}
-            error={objectiveError}
-          />
-          <Group mt="sm">
-            <Button
-              onClick={saveCareerObjective}
-              loading={saving.objective}
-              disabled={!objective.trim() || Boolean(objectiveError)}
-            >
-              Save Objective
-            </Button>
-          </Group>
-        </Card>
+        <Indicator color="red" disabled={!dirty.objective} position="top-end">
+          <Card withBorder mb="md" shadow="sm">
+            <Title order={3}>Career Objective</Title>
+            <Textarea
+              mt="sm"
+              autosize
+              minRows={3}
+              label="Career Objective"
+              withAsterisk
+              placeholder="Enter your career objective"
+              value={objective}
+              onChange={(e) => {
+                markDirty("objective");
+                const value = e.currentTarget.value;
+                setObjective(value);
+                setObjectiveError(
+                  value.trim() ? null : "Career objective is required"
+                );
+              }}
+              onBlur={() => {
+                if (!objective.trim()) {
+                  setObjectiveError("Career objective is required");
+                }
+              }}
+              error={objectiveError}
+            />
+            <Group mt="sm">
+              <Button
+                onClick={saveCareerObjective}
+                loading={saving.objective}
+                disabled={!objective.trim() || Boolean(objectiveError)}
+              >
+                Save Objective
+              </Button>
+            </Group>
+          </Card>
+        </Indicator>
       )}
 
       {/* Skills */}
       {skillsState && (
-        <Card withBorder mb="md" shadow="sm">
-          <Title order={3}>Skills</Title>
-          <Stack mt="sm">
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleCategoryDragEnd}
-            >
-              <SortableContext
-                items={categoryOrder}
-                strategy={verticalListSortingStrategy}
+        <Indicator color="red" disabled={!dirty.skills} position="top-end">
+          <Card withBorder mb="md" shadow="sm">
+            <Title order={3}>Skills</Title>
+            <Stack mt="sm">
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleCategoryDragEnd}
               >
-                {categoryOrder.map((category) => {
-                  const skillList = skillsState[category] || [];
+                <SortableContext
+                  items={categoryOrder}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {categoryOrder.map((category) => {
+                    const skillList = skillsState[category] || [];
 
-                  return (
-                    <SortableCategory key={category} id={category}>
-                      <div style={{ marginBottom: "1rem" }}>
-                        {/* Category Header */}
-                        <Group align="center" mb="xs">
-                          <Title order={4} mt="sm">
-                            {category}
-                          </Title>
-                          <Tooltip
-                            label={
-                              emptiedCategories.has(category)
-                                ? `Click again to delete "${category}"`
-                                : `Remove all skills in "${category}"`
-                            }
-                            withArrow
-                          >
-                            <ActionIcon
-                              variant="subtle"
-                              color="gray"
-                              radius="xl"
-                              size="xs"
-                              style={{ opacity: 0.7 }}
-                              onClick={() => {
-                                if ((skillsState[category]?.length ?? 0) > 0) {
-                                  // Clear the skills
-                                  setSkillsState((prev) => ({
-                                    ...prev,
-                                    [category]: [],
-                                  }));
-                                  setEmptiedCategories((prev) =>
-                                    new Set(prev).add(category)
-                                  );
-                                } else {
-                                  // Fully remove category
-                                  setSkillsState((prev) => {
-                                    const updated = { ...prev };
-                                    delete updated[category];
-                                    return updated;
-                                  });
-                                  setCategoryOrder((prev) =>
-                                    prev.filter((c) => c !== category)
-                                  );
-                                  setEmptiedCategories((prev) => {
-                                    const updated = new Set(prev);
-                                    updated.delete(category);
-                                    return updated;
-                                  });
-                                }
-                              }}
+                    return (
+                      <SortableCategory key={category} id={category}>
+                        <div style={{ marginBottom: "1rem" }}>
+                          {/* Category Header */}
+                          <Group align="center" mb="xs">
+                            <Title order={4} mt="sm">
+                              {category}
+                            </Title>
+                            <Tooltip
+                              label={
+                                emptiedCategories.has(category)
+                                  ? `Click again to delete "${category}"`
+                                  : `Remove all skills in "${category}"`
+                              }
+                              withArrow
                             >
-                              <IconX size="0.9rem" stroke={1.5} />
-                            </ActionIcon>
-                          </Tooltip>
-                        </Group>
+                              <ActionIcon
+                                variant="subtle"
+                                color="gray"
+                                radius="xl"
+                                size="xs"
+                                style={{ opacity: 0.7 }}
+                                onClick={() => {
+                                  markDirty("skills");
 
-                        {/* Skills DnD */}
-                        <DndContext
-                          sensors={sensors}
-                          collisionDetection={closestCenter}
-                          onDragEnd={handleDragEnd}
-                        >
-                          <SortableContext
-                            items={skillList}
-                            strategy={rectSortingStrategy}
-                          >
-                            <Group wrap="wrap" gap={6} align="center">
-                              {skillList.map((skill) => (
-                                <DraggableSkill
-                                  key={skill}
-                                  id={skill}
-                                  category={category}
-                                  label={skill}
-                                  onRemove={() => removeSkill(category, skill)}
-                                  color={getColorFromCategory(category)}
-                                />
-                              ))}
-
-                              {editingBadge[category] ? (
-                                <ClosableEditableBadge
-                                  label={newSkillValues[category] || ""}
-                                  isEditing
-                                  onChange={(val) => {
-                                    const lowerVal = val.trim().toLowerCase();
-                                    const allSkills = getAllSkills(
-                                      skillsState
-                                    ).map((s) => s.toLowerCase());
-
-                                    setNewSkillValues((prev) => ({
+                                  if (
+                                    (skillsState[category]?.length ?? 0) > 0
+                                  ) {
+                                    // Clear the skills
+                                    setSkillsState((prev) => ({
                                       ...prev,
-                                      [category]: val,
+                                      [category]: [],
                                     }));
+                                    setEmptiedCategories((prev) =>
+                                      new Set(prev).add(category)
+                                    );
+                                  } else {
+                                    // Fully remove category
+                                    setSkillsState((prev) => {
+                                      const updated = { ...prev };
+                                      delete updated[category];
+                                      return updated;
+                                    });
+                                    setCategoryOrder((prev) =>
+                                      prev.filter((c) => c !== category)
+                                    );
+                                    setEmptiedCategories((prev) => {
+                                      const updated = new Set(prev);
+                                      updated.delete(category);
+                                      return updated;
+                                    });
+                                  }
+                                }}
+                              >
+                                <IconX size="0.9rem" stroke={1.5} />
+                              </ActionIcon>
+                            </Tooltip>
+                          </Group>
 
-                                    if (!val.trim()) {
-                                      setBadgeSkillErrors((prev) => ({
-                                        ...prev,
-                                        [category]: "Skill is required.",
-                                      }));
-                                    } else if (allSkills.includes(lowerVal)) {
-                                      const matched = getAllSkills(
+                          {/* Skills DnD */}
+                          <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}
+                          >
+                            <SortableContext
+                              items={skillList}
+                              strategy={rectSortingStrategy}
+                            >
+                              <Group wrap="wrap" gap={6} align="center">
+                                {skillList.map((skill) => (
+                                  <DraggableSkill
+                                    key={skill}
+                                    id={skill}
+                                    category={category}
+                                    label={skill}
+                                    onRemove={() =>
+                                      removeSkill(category, skill)
+                                    }
+                                    color={getColorFromCategory(category)}
+                                  />
+                                ))}
+
+                                {editingBadge[category] ? (
+                                  <ClosableEditableBadge
+                                    label={newSkillValues[category] || ""}
+                                    isEditing
+                                    onChange={(val) => {
+                                      const lowerVal = val.trim().toLowerCase();
+                                      const allSkills = getAllSkills(
                                         skillsState
-                                      ).find(
-                                        (s) => s.toLowerCase() === lowerVal
-                                      );
-                                      const matchUpper = matched
-                                        ? matched.toUpperCase()
-                                        : val.toUpperCase();
-                                      setBadgeSkillErrors((prev) => ({
+                                      ).map((s) => s.toLowerCase());
+
+                                      setNewSkillValues((prev) => ({
                                         ...prev,
-                                        [category]: `"${matchUpper}" already exists.`,
+                                        [category]: val,
                                       }));
-                                    } else {
+
+                                      if (!val.trim()) {
+                                        setBadgeSkillErrors((prev) => ({
+                                          ...prev,
+                                          [category]: "Skill is required.",
+                                        }));
+                                      } else if (allSkills.includes(lowerVal)) {
+                                        const matched = getAllSkills(
+                                          skillsState
+                                        ).find(
+                                          (s) => s.toLowerCase() === lowerVal
+                                        );
+                                        const matchUpper = matched
+                                          ? matched.toUpperCase()
+                                          : val.toUpperCase();
+                                        setBadgeSkillErrors((prev) => ({
+                                          ...prev,
+                                          [category]: `"${matchUpper}" already exists.`,
+                                        }));
+                                      } else {
+                                        setBadgeSkillErrors((prev) => ({
+                                          ...prev,
+                                          [category]: null,
+                                        }));
+                                      }
+                                    }}
+                                    onClose={() => saveNewSkill(category)}
+                                    onCancel={() => {
+                                      setEditingBadge((prev) => ({
+                                        ...prev,
+                                        [category]: false,
+                                      }));
+                                      setNewSkillValues((prev) => ({
+                                        ...prev,
+                                        [category]: "",
+                                      }));
                                       setBadgeSkillErrors((prev) => ({
                                         ...prev,
                                         [category]: null,
                                       }));
-                                    }
-                                  }}
-                                  onClose={() => saveNewSkill(category)}
-                                  onCancel={() => {
-                                    setEditingBadge((prev) => ({
-                                      ...prev,
-                                      [category]: false,
-                                    }));
-                                    setNewSkillValues((prev) => ({
-                                      ...prev,
-                                      [category]: "",
-                                    }));
-                                    setBadgeSkillErrors((prev) => ({
-                                      ...prev,
-                                      [category]: null,
-                                    }));
-                                  }}
-                                  color={getColorFromCategory(category)}
-                                  error={badgeSkillErrors[category]}
-                                />
-                              ) : (
-                                <ActionIcon
-                                  variant="light"
-                                  onClick={() => startAddSkill(category)}
-                                  color={getColorFromCategory(category)}
-                                >
-                                  <IconPlus size="1rem" />
-                                </ActionIcon>
-                              )}
-                            </Group>
-                          </SortableContext>
-                        </DndContext>
-                      </div>
-                    </SortableCategory>
-                  );
-                })}
-              </SortableContext>
-            </DndContext>
-          </Stack>
-
-          {/* Add new Categories */}
-          <Group mt="md">
-            <Button
-              variant="light"
-              onClick={() => setShowNewCategoryInput(true)}
-            >
-              + Add New Category
-            </Button>
-          </Group>
-
-          <Group mt="md">
-            <Button
-              onClick={saveSkills}
-              loading={saving.skills}
-              disabled={!!skillSaveValidationMessage}
-            >
-              Save Skills
-            </Button>
-          </Group>
-
-          {skillSaveValidationMessage && (
-            <Text size="sm" c="red" mt="xs">
-              {skillSaveValidationMessage}
-            </Text>
-          )}
-
-          {showNewCategoryInput && (
-            <Card withBorder mt="sm" p="md" radius="md" shadow="xs">
-              <Stack>
-                <TextInput
-                  ref={categoryInputRef}
-                  label="New Category Name"
-                  placeholder="e.g., Languages"
-                  withAsterisk
-                  value={newCategory}
-                  onChange={(e) => {
-                    const val = e.currentTarget.value;
-                    setNewCategory(val);
-
-                    const lowerVal = val.trim().toLowerCase();
-                    const categoryExists = Object.keys(skillsState).some(
-                      (cat) => cat.toLowerCase() === lowerVal
+                                    }}
+                                    color={getColorFromCategory(category)}
+                                    error={badgeSkillErrors[category]}
+                                  />
+                                ) : (
+                                  <ActionIcon
+                                    variant="light"
+                                    onClick={() => startAddSkill(category)}
+                                    color={getColorFromCategory(category)}
+                                  >
+                                    <IconPlus size="1rem" />
+                                  </ActionIcon>
+                                )}
+                              </Group>
+                            </SortableContext>
+                          </DndContext>
+                        </div>
+                      </SortableCategory>
                     );
+                  })}
+                </SortableContext>
+              </DndContext>
+            </Stack>
 
-                    if (!val.trim()) {
-                      setNewCategoryError("Category name is required.");
-                    } else if (categoryExists) {
-                      setNewCategoryError("This category already exists.");
-                    } else {
-                      setNewCategoryError(null);
-                    }
-                  }}
-                  error={newCategoryError}
-                />
-                <TextInput
-                  label="First Skill"
-                  placeholder="e.g., C, Java, Python"
-                  withAsterisk
-                  value={newCategorySkill}
-                  onChange={(e) => {
-                    const val = e.currentTarget.value;
-                    setNewCategorySkill(val);
+            {/* Add new Categories */}
+            <Group mt="md">
+              <Button
+                variant="light"
+                onClick={() => setShowNewCategoryInput(true)}
+              >
+                + Add New Category
+              </Button>
+            </Group>
 
-                    const lowerVal = val.trim().toLowerCase();
-                    const allSkills = getAllSkills(skillsState).map((s) =>
-                      s.toLowerCase()
-                    );
+            <Group mt="md">
+              <Button
+                onClick={saveSkills}
+                loading={saving.skills}
+                disabled={!!skillSaveValidationMessage}
+              >
+                Save Skills
+              </Button>
+            </Group>
 
-                    if (!val.trim()) {
-                      setNewCategorySkillError(
-                        "At least one skill is required."
+            {skillSaveValidationMessage && (
+              <Text size="sm" c="red" mt="xs">
+                {skillSaveValidationMessage}
+              </Text>
+            )}
+
+            {showNewCategoryInput && (
+              <Card withBorder mt="sm" p="md" radius="md" shadow="xs">
+                <Stack>
+                  <TextInput
+                    ref={categoryInputRef}
+                    label="New Category Name"
+                    placeholder="e.g., Languages"
+                    withAsterisk
+                    value={newCategory}
+                    onChange={(e) => {
+                      const val = e.currentTarget.value;
+                      setNewCategory(val);
+
+                      const lowerVal = val.trim().toLowerCase();
+                      const categoryExists = Object.keys(skillsState).some(
+                        (cat) => cat.toLowerCase() === lowerVal
                       );
-                    } else if (allSkills.includes(lowerVal)) {
-                      const matched = getAllSkills(skillsState).find(
-                        (s) => s.toLowerCase() === lowerVal
+
+                      if (!val.trim()) {
+                        setNewCategoryError("Category name is required.");
+                      } else if (categoryExists) {
+                        setNewCategoryError("This category already exists.");
+                      } else {
+                        setNewCategoryError(null);
+                      }
+                    }}
+                    error={newCategoryError}
+                  />
+                  <TextInput
+                    label="First Skill"
+                    placeholder="e.g., C, Java, Python"
+                    withAsterisk
+                    value={newCategorySkill}
+                    onChange={(e) => {
+                      const val = e.currentTarget.value;
+                      setNewCategorySkill(val);
+
+                      const lowerVal = val.trim().toLowerCase();
+                      const allSkills = getAllSkills(skillsState).map((s) =>
+                        s.toLowerCase()
                       );
-                      const formatted = matched
-                        ? `"${matched.toUpperCase()}" already exists.`
-                        : "Skill already exists.";
-                      setNewCategorySkillError(formatted);
-                    } else {
-                      setNewCategorySkillError(null);
-                    }
-                  }}
-                  error={newCategorySkillError}
-                />
-                <Group>
-                  <Button
-                    onClick={addNewCategory}
-                    disabled={
-                      !newCategory.trim() ||
-                      !newCategorySkill.trim() ||
-                      newCategoryError !== null ||
-                      newCategorySkillError !== null
-                    }
-                  >
-                    Add Category
-                  </Button>
-                  <Button
-                    variant="subtle"
-                    color="gray"
-                    onClick={() => setShowNewCategoryInput(false)}
-                  >
-                    Cancel
-                  </Button>
-                </Group>
-              </Stack>
-            </Card>
-          )}
-        </Card>
+
+                      if (!val.trim()) {
+                        setNewCategorySkillError(
+                          "At least one skill is required."
+                        );
+                      } else if (allSkills.includes(lowerVal)) {
+                        const matched = getAllSkills(skillsState).find(
+                          (s) => s.toLowerCase() === lowerVal
+                        );
+                        const formatted = matched
+                          ? `"${matched.toUpperCase()}" already exists.`
+                          : "Skill already exists.";
+                        setNewCategorySkillError(formatted);
+                      } else {
+                        setNewCategorySkillError(null);
+                      }
+                    }}
+                    error={newCategorySkillError}
+                  />
+                  <Group>
+                    <Button
+                      onClick={addNewCategory}
+                      disabled={
+                        !newCategory.trim() ||
+                        !newCategorySkill.trim() ||
+                        newCategoryError !== null ||
+                        newCategorySkillError !== null
+                      }
+                    >
+                      Add Category
+                    </Button>
+                    <Button
+                      variant="subtle"
+                      color="gray"
+                      onClick={() => setShowNewCategoryInput(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </Group>
+                </Stack>
+              </Card>
+            )}
+          </Card>
+        </Indicator>
       )}
 
       <div style={{ position: "relative" }}>
@@ -1828,92 +1930,594 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
           />
         )}
 
+        {/* Job History */}
+        <Indicator color="red" disabled={!dirty.jobs} position="top-end">
+          <Card withBorder mb="md" shadow="sm" style={{ position: "relative" }}>
+            <Title order={3}>Job History</Title>
+
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={(event) => {
+                if (dragDisabled) {
+                  notifications.show({
+                    color: "red",
+                    title: "Cannot Move or Edit Jobs",
+                    message:
+                      "Finish editing and fix errors before doing anything else.",
+                    autoClose: 2500,
+                  });
+                  return;
+                }
+                handleJobDragEnd(event);
+              }}
+            >
+              <SortableContext
+                items={jobsState.map((_, i) => i.toString())}
+                strategy={verticalListSortingStrategy}
+              >
+                <Stack mt="sm">
+                  {jobsState.map((job, index) => (
+                    <SortableJobCard
+                      key={index}
+                      id={index.toString()}
+                      job={job}
+                    >
+                      {/* HEADER BAR */}
+                      <UnstyledButton
+                        onClick={() => !dragDisabled && toggleEdit(index)}
+                        style={{ display: "block", width: "100%" }}
+                        tabIndex={dragDisabled ? -1 : undefined}
+                        aria-disabled={dragDisabled}
+                      >
+                        <Group
+                          align="center"
+                          style={{
+                            cursor: dragDisabled ? "not-allowed" : "pointer",
+                            padding: "8px 16px",
+                            justifyContent: "space-between",
+                            opacity: dragDisabled ? 0.4 : 1,
+                          }}
+                        >
+                          <Text>
+                            {job.title ?? "—"} @ {job.company ?? "—"}
+                          </Text>
+                          <Tooltip
+                            label={
+                              editingIndex === index ? "Collapse" : "Expand"
+                            }
+                            withArrow
+                          >
+                            <Text size="sm" c="gray">
+                              {editingIndex === index ? "–" : "+"}
+                            </Text>
+                          </Tooltip>
+                        </Group>
+                      </UnstyledButton>
+
+                      {/* DELETE BUTTON */}
+                      <Tooltip label="Remove job" withArrow>
+                        <ActionIcon
+                          variant="subtle"
+                          color="gray"
+                          size="xs"
+                          radius="xl"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!dragDisabled) {
+                              await deleteJob(index);
+                            }
+                          }}
+                          loading={saving.jobs}
+                          disabled={dragDisabled}
+                          style={{
+                            pointerEvents: dragDisabled ? "none" : "auto",
+                            opacity: dragDisabled ? 0.5 : 1,
+                          }}
+                        >
+                          <IconX size="1rem" />
+                        </ActionIcon>
+                      </Tooltip>
+
+                      {/* Inline edit form */}
+                      <Collapse in={editingIndex === index}>
+                        <div
+                          style={
+                            dragDisabled
+                              ? {
+                                  pointerEvents: "auto",
+                                  position: "relative",
+                                  zIndex: 16,
+                                  background: "white",
+                                }
+                              : {}
+                          }
+                        >
+                          <Stack px="md" pb="md">
+                            {/* TITLE */}
+                            <TextInput
+                              label="Title"
+                              placeholder="e.g. CEO"
+                              value={jobDraft?.title ?? ""}
+                              error={
+                                jobDraft && !jobDraft.title?.trim()
+                                  ? "Title is required"
+                                  : null
+                              }
+                              onChange={(e) => {
+                                markDirty("jobs");
+                                const v = e.currentTarget.value;
+                                setJobDraft((d) =>
+                                  d ? { ...d, title: v } : d
+                                );
+                              }}
+                              required
+                            />
+
+                            {/* COMPANY */}
+                            <TextInput
+                              label="Company"
+                              placeholder="e.g. Amazon"
+                              value={jobDraft?.company ?? ""}
+                              error={
+                                jobDraft && !jobDraft.company?.trim()
+                                  ? "Company is required"
+                                  : null
+                              }
+                              onChange={(e) => {
+                                markDirty("jobs");
+                                const v = e.currentTarget.value;
+                                setJobDraft((d) =>
+                                  d ? { ...d, company: v } : d
+                                );
+                              }}
+                              required
+                            />
+
+                            {/* LOCATION */}
+                            <TextInput
+                              label="Location (City, State)"
+                              placeholder="e.g. Los Angeles, California"
+                              value={jobDraft?.location ?? ""}
+                              error={locationError}
+                              withAsterisk
+                              required
+                              onChange={(e) => {
+                                markDirty("jobs");
+                                const v = e.currentTarget.value;
+                                setJobDraft((d) =>
+                                  d ? { ...d, location: v } : d
+                                );
+
+                                const trimmed = v.trim();
+                                const validLocation =
+                                  /^[A-Za-z .'-]+,\s?[A-Za-z .'-]+$/.test(
+                                    trimmed
+                                  );
+                                setLocationError(
+                                  !trimmed
+                                    ? "Location is required"
+                                    : !validLocation
+                                    ? "Please use format: City, State"
+                                    : null
+                                );
+                              }}
+                              onBlur={() => {
+                                const trimmed =
+                                  jobDraft?.location?.trim() || "";
+                                const validLocation =
+                                  /^[A-Za-z .'-]+,\s?[A-Za-z .'-]+$/.test(
+                                    trimmed
+                                  );
+                                setLocationError(
+                                  !trimmed
+                                    ? "Location is required"
+                                    : !validLocation
+                                    ? "Please use format: City, State"
+                                    : null
+                                );
+                              }}
+                            />
+
+                            {/* DATES */}
+                            <Group>
+                              {/* START DATE */}
+                              <TextInput
+                                label="Start Date (YYYY-MM)"
+                                placeholder="2025-06"
+                                withAsterisk
+                                required
+                                value={jobDraft?.start_date ?? ""}
+                                error={startDateError}
+                                onChange={(e) => {
+                                  markDirty("jobs");
+                                  const raw = e.currentTarget.value;
+                                  const digits = raw
+                                    .replace(/\D/g, "")
+                                    .slice(0, 6);
+                                  const masked =
+                                    digits.length > 4
+                                      ? digits.slice(0, 4) +
+                                        "-" +
+                                        digits.slice(4)
+                                      : digits;
+                                  setJobDraft((d) =>
+                                    d ? { ...d, start_date: masked } : d
+                                  );
+                                }}
+                              />
+                              {/* END DATE */}
+                              <TextInput
+                                label="End Date"
+                                placeholder="YYYY-MM or Present"
+                                withAsterisk
+                                required
+                                value={jobDraft?.end_date ?? ""}
+                                error={endDateError}
+                                onChange={(e) => {
+                                  markDirty("jobs");
+                                  const raw = e.currentTarget.value;
+                                  if (/^present$/i.test(raw)) {
+                                    setJobDraft((d) =>
+                                      d ? { ...d, end_date: "Present" } : d
+                                    );
+                                  }
+                                  if (/[A-Za-z]/.test(raw)) {
+                                    setJobDraft((d) =>
+                                      d ? { ...d, end_date: raw } : d
+                                    );
+                                    return;
+                                  }
+                                  const digits = raw
+                                    .replace(/\D/g, "")
+                                    .slice(0, 6);
+                                  const masked =
+                                    digits.length > 4
+                                      ? digits.slice(0, 4) +
+                                        "-" +
+                                        digits.slice(4)
+                                      : digits;
+                                  setJobDraft((d) =>
+                                    d ? { ...d, end_date: masked } : d
+                                  );
+                                }}
+                              />
+                              {/* Date‐order validation */}
+                              {jobDraft?.start_date &&
+                                jobDraft.end_date &&
+                                jobDraft.end_date !== "Present" && (
+                                  <Text c="red" size="xs">
+                                    {jobDraft.end_date < jobDraft.start_date
+                                      ? "End date must be later than start date"
+                                      : null}
+                                  </Text>
+                                )}
+                            </Group>
+
+                            {/* ROLE SUMMARY */}
+                            <Textarea
+                              label="Role Summary"
+                              placeholder="A brief summary of your role"
+                              withAsterisk
+                              autosize
+                              minRows={2}
+                              value={jobDraft?.role_summary ?? ""}
+                              error={roleSummaryError}
+                              onChange={(e) => {
+                                markDirty("jobs");
+                                const v = e.currentTarget.value;
+                                setJobDraft((d) =>
+                                  d ? { ...d, role_summary: v } : d
+                                );
+                              }}
+                            />
+
+                            {/* RESPONSIBILITIES */}
+                            <Title order={5}>Responsibilities</Title>
+                            {hasNoneAdded && (
+                              <Text size="xs" c="red">
+                                Must have at least one responsibility or
+                                accomplishment
+                              </Text>
+                            )}
+                            {jobDraft?.responsibilities.map((resp, i) => (
+                              <Group key={i} align="flex-end">
+                                <Textarea
+                                  autosize
+                                  required
+                                  withAsterisk
+                                  minRows={1}
+                                  value={resp}
+                                  error={!resp.trim() ? "Required" : undefined}
+                                  onChange={(e) => {
+                                    markDirty("jobs");
+                                    const v = e.currentTarget.value;
+                                    setJobDraft((d) => {
+                                      if (!d) return d;
+                                      const arr = [...d.responsibilities];
+                                      arr[i] = v;
+                                      return { ...d, responsibilities: arr };
+                                    });
+                                  }}
+                                />
+                                <ActionIcon
+                                  color="red"
+                                  onClick={() => {
+                                    markDirty("jobs");
+                                    setJobDraft((d) => {
+                                      if (!d) return d;
+                                      const arr = [...d.responsibilities];
+                                      arr.splice(i, 1);
+                                      return { ...d, responsibilities: arr };
+                                    });
+                                  }}
+                                >
+                                  <IconTrash size="1rem" />
+                                </ActionIcon>
+                              </Group>
+                            ))}
+                            <Button
+                              variant="subtle"
+                              size="xs"
+                              onClick={() => {
+                                markDirty("jobs");
+                                setJobDraft((d) =>
+                                  d
+                                    ? {
+                                        ...d,
+                                        responsibilities: [
+                                          ...d.responsibilities,
+                                          "",
+                                        ],
+                                      }
+                                    : d
+                                );
+                              }}
+                            >
+                              + Add Responsibility
+                            </Button>
+
+                            {/* ACCOMPLISHMENTS */}
+                            <Title order={5}>Accomplishments</Title>
+                            {hasNoneAdded && (
+                              <Text size="xs" c="red">
+                                Must have at least one responsibility or
+                                accomplishment
+                              </Text>
+                            )}
+                            {jobDraft?.accomplishments.map((acc, i) => (
+                              <Group key={i} align="flex-end">
+                                <Textarea
+                                  autosize
+                                  required
+                                  withAsterisk
+                                  minRows={1}
+                                  value={acc}
+                                  error={!acc.trim() ? "Required" : undefined}
+                                  onChange={(e) => {
+                                    markDirty("jobs");
+                                    const v = e.currentTarget.value;
+                                    setJobDraft((d) => {
+                                      if (!d) return d;
+                                      const arr = [...d.accomplishments];
+                                      arr[i] = v;
+                                      return { ...d, accomplishments: arr };
+                                    });
+                                  }}
+                                />
+                                <ActionIcon
+                                  color="red"
+                                  onClick={() =>
+                                    setJobDraft((d) => {
+                                      markDirty("jobs");
+                                      if (!d) return d;
+                                      const arr = [...d.accomplishments];
+                                      arr.splice(i, 1);
+                                      return { ...d, accomplishments: arr };
+                                    })
+                                  }
+                                >
+                                  <IconTrash size="1rem" />
+                                </ActionIcon>
+                              </Group>
+                            ))}
+                            <Button
+                              variant="subtle"
+                              size="xs"
+                              onClick={() => {
+                                markDirty("jobs");
+                                setJobDraft((d) =>
+                                  d
+                                    ? {
+                                        ...d,
+                                        accomplishments: [
+                                          ...d.accomplishments,
+                                          "",
+                                        ],
+                                      }
+                                    : d
+                                );
+                              }}
+                            >
+                              + Add Accomplishment
+                            </Button>
+
+                            {/* SAVE / CANCEL */}
+                            <Group mt="sm">
+                              <Button
+                                size="xs"
+                                onClick={() => saveJob(index)}
+                                disabled={isJobSaveDisabled || saving.jobs}
+                                loading={saving.jobs}
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                size="xs"
+                                variant="subtle"
+                                onClick={cancelEdit}
+                              >
+                                Cancel
+                              </Button>
+                            </Group>
+                          </Stack>
+                        </div>
+                      </Collapse>
+                    </SortableJobCard>
+                  ))}
+                </Stack>
+              </SortableContext>
+            </DndContext>
+
+            {/* + Add Job button */}
+            <Group mb="sm">
+              <Button
+                variant="light"
+                onClick={() => {
+                  markDirty("jobs");
+
+                  if (!dragDisabled) {
+                    const empty: JobEntry = canonicalizeJob({});
+                    setJobsState((prev) => [...prev, empty]);
+                    const newIndex = jobsState.length;
+                    setEditingIndex(newIndex);
+                    setJobDraft(empty);
+
+                    const trimmed = empty.location?.trim() || "";
+                    const validLocation =
+                      /^[A-Za-z .'-]+,\s?[A-Za-z .'-]+$/.test(trimmed);
+                    setLocationError(
+                      !trimmed
+                        ? "Location is required"
+                        : !validLocation
+                        ? "Please use format: City, State"
+                        : null
+                    );
+                  }
+                }}
+                disabled={dragDisabled}
+                style={{
+                  pointerEvents: dragDisabled ? "none" : "auto",
+                  opacity: dragDisabled ? 0.5 : 1,
+                }}
+              >
+                + Add Job
+              </Button>
+            </Group>
+          </Card>
+        </Indicator>
+      </div>
+
+      {/* Education */}
+      <Indicator color="red" disabled={!dirty.education} position="top-end">
         <Card withBorder mb="md" shadow="sm" style={{ position: "relative" }}>
-          <Title order={3}>Job History</Title>
+          <Title order={3}>Education</Title>
+
+          {/* Spinner overlay while saving education order */}
+          {savingEduOrder && (
+            <div
+              style={{
+                position: "absolute",
+                zIndex: 20,
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: "rgba(255,255,255,0.6)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Loader size="lg" color="blue" />
+            </div>
+          )}
+
+          {/* Block UI when form is open and invalid */}
+          {blockEduUI && (
+            <div
+              style={{
+                position: "absolute",
+                zIndex: 15,
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: "rgba(255,255,255,0.25)",
+              }}
+              onClick={() =>
+                notifications.show({
+                  color: "red",
+                  title: "Cannot Move or Edit Education",
+                  message:
+                    "Finish editing and fix errors before doing anything else.",
+                  autoClose: 2500,
+                })
+              }
+            />
+          )}
 
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
-            onDragEnd={(event) => {
-              if (dragDisabled) {
-                notifications.show({
-                  color: "red",
-                  title: "Cannot Move or Edit Jobs",
-                  message:
-                    "Finish editing and fix errors before doing anything else.",
-                  autoClose: 2500,
-                });
-                return;
-              }
-              handleJobDragEnd(event);
-            }}
+            onDragEnd={handleEduDragEnd}
           >
             <SortableContext
-              items={jobsState.map((_, i) => i.toString())}
+              items={edusState.map((_, i) => i.toString())}
               strategy={verticalListSortingStrategy}
             >
               <Stack mt="sm">
-                {jobsState.map((job, index) => (
-                  <SortableJobCard key={index} id={index.toString()} job={job}>
-                    {/* HEADER BAR */}
+                {edusState.map((edu, idx) => (
+                  <SortableEducationCard
+                    key={idx}
+                    id={idx.toString()}
+                    entry={edu}
+                  >
+                    {/* Header: toggle edit */}
                     <UnstyledButton
-                      onClick={() => !dragDisabled && toggleEdit(index)}
-                      style={{ display: "block", width: "100%" }}
-                      tabIndex={dragDisabled ? -1 : undefined}
-                      aria-disabled={dragDisabled}
+                      onClick={() =>
+                        editingEduIndex === idx
+                          ? cancelEduEdit()
+                          : toggleEduEdit(idx)
+                      }
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        padding: "8px 16px",
+                        cursor: "pointer",
+                      }}
                     >
-                      <Group
-                        align="center"
-                        style={{
-                          cursor: dragDisabled ? "not-allowed" : "pointer",
-                          padding: "8px 16px",
-                          justifyContent: "space-between",
-                          opacity: dragDisabled ? 0.4 : 1,
-                        }}
-                      >
+                      <Group>
                         <Text>
-                          {job.title ?? "—"} @ {job.company ?? "—"}
+                          {edu.institution ?? "—"} — {edu.degree ?? "—"}
                         </Text>
-                        <Tooltip
-                          label={editingIndex === index ? "Collapse" : "Expand"}
-                          withArrow
-                        >
-                          <Text size="sm" c="gray">
-                            {editingIndex === index ? "–" : "+"}
-                          </Text>
-                        </Tooltip>
+                        <Text size="sm" c="gray">
+                          {editingEduIndex === idx ? "–" : "+"}
+                        </Text>
                       </Group>
                     </UnstyledButton>
 
-                    {/* DELETE BUTTON */}
-                    <Tooltip label="Remove job" withArrow>
+                    {/* Delete button */}
+                    <Tooltip label="Remove education" withArrow>
                       <ActionIcon
                         variant="subtle"
                         color="gray"
                         size="xs"
                         radius="xl"
-                        onClick={async (e) => {
+                        onClick={(e) => {
                           e.stopPropagation();
-                          if (!dragDisabled) {
-                            await deleteJob(index);
-                          }
-                        }}
-                        loading={saving.jobs}
-                        disabled={dragDisabled}
-                        style={{
-                          pointerEvents: dragDisabled ? "none" : "auto",
-                          opacity: dragDisabled ? 0.5 : 1,
+                          deleteEdu(idx);
                         }}
                       >
                         <IconX size="1rem" />
                       </ActionIcon>
                     </Tooltip>
 
-                    {/* Inline edit form */}
-                    <Collapse in={editingIndex === index}>
+                    {/* Edit form */}
+                    <Collapse in={editingEduIndex === idx}>
                       <div
                         style={
-                          dragDisabled
+                          blockEduUI
                             ? {
                                 pointerEvents: "auto",
                                 position: "relative",
@@ -1924,96 +2528,66 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
                         }
                       >
                         <Stack px="md" pb="md">
-                          {/* TITLE */}
                           <TextInput
-                            label="Title"
-                            placeholder="e.g. CEO"
-                            value={jobDraft?.title ?? ""}
-                            error={
-                              jobDraft && !jobDraft.title?.trim()
-                                ? "Title is required"
-                                : null
-                            }
+                            label="Institution"
+                            value={eduDraft?.institution ?? ""}
                             onChange={(e) => {
-                              const v = e.currentTarget.value;
-                              setJobDraft((d) => (d ? { ...d, title: v } : d));
-                            }}
-                            required
-                          />
-
-                          {/* COMPANY */}
-                          <TextInput
-                            label="Company"
-                            placeholder="e.g. Amazon"
-                            value={jobDraft?.company ?? ""}
-                            error={
-                              jobDraft && !jobDraft.company?.trim()
-                                ? "Company is required"
-                                : null
-                            }
-                            onChange={(e) => {
-                              const v = e.currentTarget.value;
-                              setJobDraft((d) =>
-                                d ? { ...d, company: v } : d
-                              );
-                            }}
-                            required
-                          />
-
-                          {/* LOCATION */}
-                          <TextInput
-                            label="Location (City, State)"
-                            placeholder="e.g. Los Angeles, California"
-                            value={jobDraft?.location ?? ""}
-                            error={locationError}
-                            withAsterisk
-                            required
-                            onChange={(e) => {
-                              const v = e.currentTarget.value;
-                              setJobDraft((d) =>
-                                d ? { ...d, location: v } : d
-                              );
-
-                              const trimmed = v.trim();
-                              const validLocation =
-                                /^[A-Za-z .'-]+,\s?[A-Za-z .'-]+$/.test(
-                                  trimmed
-                                );
-                              setLocationError(
-                                !trimmed
-                                  ? "Location is required"
-                                  : !validLocation
-                                  ? "Please use format: City, State"
+                              markDirty("education");
+                              const val = e.currentTarget.value;
+                              setEduDraft((d) =>
+                                canonicalizeEdu(d || {}).institution !==
+                                undefined
+                                  ? {
+                                      ...canonicalizeEdu(d || {}),
+                                      institution: val,
+                                    }
                                   : null
                               );
                             }}
-                            onBlur={() => {
-                              const trimmed = jobDraft?.location?.trim() || "";
-                              const validLocation =
-                                /^[A-Za-z .'-]+,\s?[A-Za-z .'-]+$/.test(
-                                  trimmed
-                                );
-                              setLocationError(
-                                !trimmed
-                                  ? "Location is required"
-                                  : !validLocation
-                                  ? "Please use format: City, State"
+                            error={
+                              eduDraft && !eduDraft.institution?.trim()
+                                ? "Institution is required"
+                                : null
+                            }
+                            required
+                          />
+
+                          <TextInput
+                            label="Degree"
+                            value={eduDraft?.degree ?? ""}
+                            onChange={(e) => {
+                              markDirty("education");
+                              const val = e.currentTarget.value;
+                              setEduDraft((d) =>
+                                canonicalizeEdu(d || {}).degree !== undefined
+                                  ? { ...canonicalizeEdu(d || {}), degree: val }
                                   : null
                               );
                             }}
+                            error={
+                              eduDraft && !eduDraft.degree?.trim()
+                                ? "Degree is required"
+                                : null
+                            }
+                            required
                           />
-
-                          {/* DATES */}
-                          <Group>
-                            {/* START DATE */}
+                          <Group grow mt="sm">
+                            {/* Start Date */}
                             <TextInput
                               label="Start Date (YYYY-MM)"
-                              placeholder="2025-06"
+                              placeholder="2021-09"
                               withAsterisk
                               required
-                              value={jobDraft?.start_date ?? ""}
-                              error={startDateError}
+                              value={eduDraft?.start_date ?? ""}
+                              error={
+                                !eduDraft?.start_date
+                                  ? "Start date is required"
+                                  : !/^\d{4}-\d{2}$/.test(eduDraft.start_date)
+                                  ? "Use format YYYY-MM"
+                                  : null
+                              }
                               onChange={(e) => {
+                                markDirty("education");
                                 const raw = e.currentTarget.value;
                                 const digits = raw
                                   .replace(/\D/g, "")
@@ -2022,211 +2596,126 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
                                   digits.length > 4
                                     ? digits.slice(0, 4) + "-" + digits.slice(4)
                                     : digits;
-                                setJobDraft((d) =>
-                                  d ? { ...d, start_date: masked } : d
+                                setEduDraft((d) =>
+                                  d
+                                    ? {
+                                        ...canonicalizeEdu(d),
+                                        start_date: masked,
+                                      }
+                                    : d
                                 );
                               }}
                             />
-                            {/* END DATE */}
+
                             <TextInput
                               label="End Date"
                               placeholder="YYYY-MM or Present"
                               withAsterisk
                               required
-                              value={jobDraft?.end_date ?? ""}
-                              error={endDateError}
+                              value={eduDraft?.end_date ?? ""}
+                              error={
+                                !eduDraft?.end_date
+                                  ? "End date is required"
+                                  : !/^(?:\d{4}-\d{2}|Present)$/i.test(
+                                      eduDraft.end_date
+                                    )
+                                  ? "Use YYYY-MM or exactly “Present”"
+                                  : eduDraft.start_date &&
+                                    eduDraft.end_date !== "Present" &&
+                                    eduDraft.end_date < eduDraft.start_date
+                                  ? "End date must be later than start date"
+                                  : null
+                              }
                               onChange={(e) => {
+                                markDirty("education");
                                 const raw = e.currentTarget.value;
-                                if (/^present$/i.test(raw)) {
-                                  setJobDraft((d) =>
-                                    d ? { ...d, end_date: "Present" } : d
-                                  );
-                                }
+                                let next: string;
+
+                                // If they type letters at all, just keep what they type
                                 if (/[A-Za-z]/.test(raw)) {
-                                  setJobDraft((d) =>
-                                    d ? { ...d, end_date: raw } : d
-                                  );
-                                  return;
+                                  next = raw;
+                                } else {
+                                  // Otherwise mask as YYYY-MM
+                                  const digits = raw
+                                    .replace(/\D/g, "")
+                                    .slice(0, 6);
+                                  next =
+                                    digits.length > 4
+                                      ? `${digits.slice(0, 4)}-${digits.slice(
+                                          4
+                                        )}`
+                                      : digits;
                                 }
-                                const digits = raw
-                                  .replace(/\D/g, "")
-                                  .slice(0, 6);
-                                const masked =
-                                  digits.length > 4
-                                    ? digits.slice(0, 4) + "-" + digits.slice(4)
-                                    : digits;
-                                setJobDraft((d) =>
-                                  d ? { ...d, end_date: masked } : d
+
+                                setEduDraft((d) =>
+                                  d
+                                    ? {
+                                        ...d,
+                                        end_date: next,
+                                      }
+                                    : d
                                 );
                               }}
                             />
-                            {/* Date‐order validation */}
-                            {jobDraft?.start_date &&
-                              jobDraft.end_date &&
-                              jobDraft.end_date !== "Present" && (
-                                <Text color="red" size="xs">
-                                  {jobDraft.end_date < jobDraft.start_date
-                                    ? "End date must be later than start date"
-                                    : null}
-                                </Text>
-                              )}
                           </Group>
-
-                          {/* ROLE SUMMARY */}
-                          <Textarea
-                            label="Role Summary"
-                            placeholder="A brief summary of your role"
-                            withAsterisk
-                            autosize
-                            minRows={2}
-                            value={jobDraft?.role_summary ?? ""}
-                            error={roleSummaryError}
+                          <TextInput
+                            label="GPA"
+                            placeholder="e.g. 3.75"
+                            value={gpaInput}
+                            error={
+                              gpaInput && !/^\d(?:\.\d{0,2})?$/.test(gpaInput)
+                                ? "Use format X.XX"
+                                : null
+                            }
                             onChange={(e) => {
-                              const v = e.currentTarget.value;
-                              setJobDraft((d) =>
-                                d ? { ...d, role_summary: v } : d
-                              );
+                              markDirty("education");
+                              let val = e.currentTarget.value;
+                              // If they’ve typed exactly one digit (e.g. "3"), append the dot
+                              if (/^\d$/.test(val)) {
+                                val = `${val}.`;
+                              }
+                              // Only allow:
+                              //  • a single digit + a dot (“3.”)
+                              //  • or digit + dot + up to 2 decimals (“3.7”, “3.75”)
+                              if (
+                                /^\d(?:\.\d{0,2})?$/.test(val) ||
+                                val === ""
+                              ) {
+                                setGpaInput(val);
+                                // don’t update eduDraft here—wait until blur
+                              }
+                            }}
+                            onBlur={() => {
+                              // Once they leave the field, pad to two decimals and commit to eduDraft
+                              if (
+                                /^\d(?:\.\d{0,2})?$/.test(gpaInput) &&
+                                gpaInput !== ""
+                              ) {
+                                const [intPart, decPart = ""] =
+                                  gpaInput.split(".");
+                                const padded =
+                                  intPart + "." + (decPart + "00").slice(0, 2);
+                                setGpaInput(padded);
+                                setEduDraft((d) =>
+                                  d ? { ...d, GPA: parseFloat(padded) } : d
+                                );
+                              }
                             }}
                           />
 
-                          {/* RESPONSIBILITIES */}
-                          <Title order={5}>Responsibilities</Title>
-                          {hasNoneAdded && (
-                            <Text size="xs" c="red">
-                              Must have at least one responsibility or
-                              accomplishment
-                            </Text>
-                          )}
-                          {jobDraft?.responsibilities.map((resp, i) => (
-                            <Group key={i} align="flex-end">
-                              <Textarea
-                                autosize
-                                required
-                                withAsterisk
-                                minRows={1}
-                                value={resp}
-                                error={!resp.trim() ? "Required" : undefined}
-                                onChange={(e) => {
-                                  const v = e.currentTarget.value;
-                                  setJobDraft((d) => {
-                                    if (!d) return d;
-                                    const arr = [...d.responsibilities];
-                                    arr[i] = v;
-                                    return { ...d, responsibilities: arr };
-                                  });
-                                }}
-                              />
-                              <ActionIcon
-                                color="red"
-                                onClick={() => {
-                                  setJobDraft((d) => {
-                                    if (!d) return d;
-                                    const arr = [...d.responsibilities];
-                                    arr.splice(i, 1);
-                                    return { ...d, responsibilities: arr };
-                                  });
-                                }}
-                              >
-                                <IconTrash size="1rem" />
-                              </ActionIcon>
-                            </Group>
-                          ))}
-                          <Button
-                            variant="subtle"
-                            size="xs"
-                            onClick={() =>
-                              setJobDraft((d) =>
-                                d
-                                  ? {
-                                      ...d,
-                                      responsibilities: [
-                                        ...d.responsibilities,
-                                        "",
-                                      ],
-                                    }
-                                  : d
-                              )
-                            }
-                          >
-                            + Add Responsibility
-                          </Button>
-
-                          {/* ACCOMPLISHMENTS */}
-                          <Title order={5}>Accomplishments</Title>
-                          {hasNoneAdded && (
-                            <Text size="xs" c="red">
-                              Must have at least one responsibility or
-                              accomplishment
-                            </Text>
-                          )}
-                          {jobDraft?.accomplishments.map((acc, i) => (
-                            <Group key={i} align="flex-end">
-                              <Textarea
-                                autosize
-                                required
-                                withAsterisk
-                                minRows={1}
-                                value={acc}
-                                error={!acc.trim() ? "Required" : undefined}
-                                onChange={(e) => {
-                                  const v = e.currentTarget.value;
-                                  setJobDraft((d) => {
-                                    if (!d) return d;
-                                    const arr = [...d.accomplishments];
-                                    arr[i] = v;
-                                    return { ...d, accomplishments: arr };
-                                  });
-                                }}
-                              />
-                              <ActionIcon
-                                color="red"
-                                onClick={() =>
-                                  setJobDraft((d) => {
-                                    if (!d) return d;
-                                    const arr = [...d.accomplishments];
-                                    arr.splice(i, 1);
-                                    return { ...d, accomplishments: arr };
-                                  })
-                                }
-                              >
-                                <IconTrash size="1rem" />
-                              </ActionIcon>
-                            </Group>
-                          ))}
-                          <Button
-                            variant="subtle"
-                            size="xs"
-                            onClick={() =>
-                              setJobDraft((d) =>
-                                d
-                                  ? {
-                                      ...d,
-                                      accomplishments: [
-                                        ...d.accomplishments,
-                                        "",
-                                      ],
-                                    }
-                                  : d
-                              )
-                            }
-                          >
-                            + Add Accomplishment
-                          </Button>
-
-                          {/* SAVE / CANCEL */}
                           <Group mt="sm">
                             <Button
                               size="xs"
-                              onClick={() => saveJob(index)}
-                              disabled={isJobSaveDisabled || saving.jobs}
+                              onClick={() => saveEdu(idx)}
                               loading={saving.jobs}
+                              disabled={isEduSaveDisabled}
                             >
                               Save
                             </Button>
                             <Button
                               size="xs"
                               variant="subtle"
-                              onClick={cancelEdit}
+                              onClick={cancelEduEdit}
                             >
                               Cancel
                             </Button>
@@ -2234,372 +2723,31 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
                         </Stack>
                       </div>
                     </Collapse>
-                  </SortableJobCard>
+                  </SortableEducationCard>
                 ))}
               </Stack>
             </SortableContext>
           </DndContext>
 
-          {/* + Add Job button */}
-          <Group mb="sm">
+          {/* + Add Education button */}
+          <Group mt="md">
             <Button
               variant="light"
               onClick={() => {
-                if (!dragDisabled) {
-                  const empty: JobEntry = canonicalizeJob({});
-                  setJobsState((prev) => [...prev, empty]);
-                  const newIndex = jobsState.length;
-                  setEditingIndex(newIndex);
-                  setJobDraft(empty);
-
-                  const trimmed = empty.location?.trim() || "";
-                  const validLocation = /^[A-Za-z .'-]+,\s?[A-Za-z .'-]+$/.test(
-                    trimmed
-                  );
-                  setLocationError(
-                    !trimmed
-                      ? "Location is required"
-                      : !validLocation
-                      ? "Please use format: City, State"
-                      : null
-                  );
-                }
-              }}
-              disabled={dragDisabled}
-              style={{
-                pointerEvents: dragDisabled ? "none" : "auto",
-                opacity: dragDisabled ? 0.5 : 1,
+                markDirty("education");
+                
+                const blank = canonicalizeEdu({});
+                setEdusState((prev) => [...prev, blank]);
+                setEditingEduIndex(edusState.length);
+                setEduDraft(blank);
+                setGpaInput("");
               }}
             >
-              + Add Job
+              + Add Education
             </Button>
           </Group>
         </Card>
-      </div>
-
-      {/* Education */}
-      <Card withBorder mb="md" shadow="sm" style={{ position: "relative" }}>
-        <Title order={3}>Education</Title>
-
-        {/* Spinner overlay while saving education order */}
-        {savingEduOrder && (
-          <div
-            style={{
-              position: "absolute",
-              zIndex: 20,
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: "rgba(255,255,255,0.6)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Loader size="lg" color="blue" />
-          </div>
-        )}
-
-        {/* Block UI when form is open and invalid */}
-        {blockEduUI && (
-          <div
-            style={{
-              position: "absolute",
-              zIndex: 15,
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: "rgba(255,255,255,0.25)",
-            }}
-            onClick={() =>
-              notifications.show({
-                color: "red",
-                title: "Cannot Move or Edit Education",
-                message:
-                  "Finish editing and fix errors before doing anything else.",
-                autoClose: 2500,
-              })
-            }
-          />
-        )}
-
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleEduDragEnd}
-        >
-          <SortableContext
-            items={edusState.map((_, i) => i.toString())}
-            strategy={verticalListSortingStrategy}
-          >
-            <Stack mt="sm">
-              {edusState.map((edu, idx) => (
-                <SortableEducationCard
-                  key={idx}
-                  id={idx.toString()}
-                  entry={edu}
-                >
-                  {/* Header: toggle edit */}
-                  <UnstyledButton
-                    onClick={() =>
-                      editingEduIndex === idx
-                        ? cancelEduEdit()
-                        : toggleEduEdit(idx)
-                    }
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      padding: "8px 16px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <Group>
-                      <Text>
-                        {edu.institution ?? "—"} — {edu.degree ?? "—"}
-                      </Text>
-                      <Text size="sm" c="gray">
-                        {editingEduIndex === idx ? "–" : "+"}
-                      </Text>
-                    </Group>
-                  </UnstyledButton>
-
-                  {/* Delete button */}
-                  <Tooltip label="Remove education" withArrow>
-                    <ActionIcon
-                      variant="subtle"
-                      color="gray"
-                      size="xs"
-                      radius="xl"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteEdu(idx);
-                      }}
-                    >
-                      <IconX size="1rem" />
-                    </ActionIcon>
-                  </Tooltip>
-
-                  {/* Edit form */}
-                  <Collapse in={editingEduIndex === idx}>
-                    <div
-                      style={
-                        blockEduUI
-                          ? {
-                              pointerEvents: "auto",
-                              position: "relative",
-                              zIndex: 16,
-                              background: "white",
-                            }
-                          : {}
-                      }
-                    >
-                      <Stack px="md" pb="md">
-                        <TextInput
-                          label="Institution"
-                          value={eduDraft?.institution ?? ""}
-                          onChange={(e) => {
-                            const val = e.currentTarget.value;
-                            setEduDraft((d) =>
-                              canonicalizeEdu(d || {}).institution !== undefined
-                                ? {
-                                    ...canonicalizeEdu(d || {}),
-                                    institution: val,
-                                  }
-                                : null
-                            );
-                          }}
-                          error={
-                            eduDraft && !eduDraft.institution?.trim()
-                              ? "Institution is required"
-                              : null
-                          }
-                          required
-                        />
-
-                        <TextInput
-                          label="Degree"
-                          value={eduDraft?.degree ?? ""}
-                          onChange={(e) => {
-                            const val = e.currentTarget.value;
-                            setEduDraft((d) =>
-                              canonicalizeEdu(d || {}).degree !== undefined
-                                ? { ...canonicalizeEdu(d || {}), degree: val }
-                                : null
-                            );
-                          }}
-                          error={
-                            eduDraft && !eduDraft.degree?.trim()
-                              ? "Degree is required"
-                              : null
-                          }
-                          required
-                        />
-                        <Group grow mt="sm">
-                          {/* Start Date */}
-                          <TextInput
-                            label="Start Date (YYYY-MM)"
-                            placeholder="2021-09"
-                            withAsterisk
-                            required
-                            value={eduDraft?.start_date ?? ""}
-                            error={
-                              !eduDraft?.start_date
-                                ? "Start date is required"
-                                : !/^\d{4}-\d{2}$/.test(eduDraft.start_date)
-                                ? "Use format YYYY-MM"
-                                : null
-                            }
-                            onChange={(e) => {
-                              const raw = e.currentTarget.value;
-                              const digits = raw.replace(/\D/g, "").slice(0, 6);
-                              const masked =
-                                digits.length > 4
-                                  ? digits.slice(0, 4) + "-" + digits.slice(4)
-                                  : digits;
-                              setEduDraft((d) =>
-                                d
-                                  ? {
-                                      ...canonicalizeEdu(d),
-                                      start_date: masked,
-                                    }
-                                  : d
-                              );
-                            }}
-                          />
-
-                          <TextInput
-                            label="End Date"
-                            placeholder="YYYY-MM or Present"
-                            withAsterisk
-                            required
-                            value={eduDraft?.end_date ?? ""}
-                            error={
-                              !eduDraft?.end_date
-                                ? "End date is required"
-                                : !/^(?:\d{4}-\d{2}|Present)$/i.test(
-                                    eduDraft.end_date
-                                  )
-                                ? "Use YYYY-MM or exactly “Present”"
-                                : eduDraft.start_date &&
-                                  eduDraft.end_date !== "Present" &&
-                                  eduDraft.end_date < eduDraft.start_date
-                                ? "End date must be later than start date"
-                                : null
-                            }
-                            onChange={(e) => {
-                              const raw = e.currentTarget.value;
-                              let next: string;
-
-                              // If they type letters at all, just keep what they type
-                              if (/[A-Za-z]/.test(raw)) {
-                                next = raw;
-                              } else {
-                                // Otherwise mask as YYYY-MM
-                                const digits = raw
-                                  .replace(/\D/g, "")
-                                  .slice(0, 6);
-                                next =
-                                  digits.length > 4
-                                    ? `${digits.slice(0, 4)}-${digits.slice(4)}`
-                                    : digits;
-                              }
-
-                              setEduDraft((d) =>
-                                d
-                                  ? {
-                                      ...d,
-                                      end_date: next,
-                                    }
-                                  : d
-                              );
-                            }}
-                          />
-                        </Group>
-                        <TextInput
-                          label="GPA"
-                          placeholder="e.g. 3.75"
-                          value={gpaInput}
-                          error={
-                            gpaInput && !/^\d(?:\.\d{0,2})?$/.test(gpaInput)
-                              ? "Use format X.XX"
-                              : null
-                          }
-                          onChange={(e) => {
-                            let val = e.currentTarget.value;
-                            // If they’ve typed exactly one digit (e.g. "3"), append the dot
-                            if (/^\d$/.test(val)) {
-                              val = `${val}.`;
-                            }
-                            // Only allow:
-                            //  • a single digit + a dot (“3.”)
-                            //  • or digit + dot + up to 2 decimals (“3.7”, “3.75”)
-                            if (/^\d(?:\.\d{0,2})?$/.test(val) || val === "") {
-                              setGpaInput(val);
-                              // don’t update eduDraft here—wait until blur
-                            }
-                          }}
-                          onBlur={() => {
-                            // Once they leave the field, pad to two decimals and commit to eduDraft
-                            if (
-                              /^\d(?:\.\d{0,2})?$/.test(gpaInput) &&
-                              gpaInput !== ""
-                            ) {
-                              const [intPart, decPart = ""] =
-                                gpaInput.split(".");
-                              const padded =
-                                intPart + "." + (decPart + "00").slice(0, 2);
-                              setGpaInput(padded);
-                              setEduDraft((d) =>
-                                d ? { ...d, GPA: parseFloat(padded) } : d
-                              );
-                            }
-                          }}
-                        />
-
-                        <Group mt="sm">
-                          <Button
-                            size="xs"
-                            onClick={() => saveEdu(idx)}
-                            loading={saving.jobs}
-                            disabled={isEduSaveDisabled}
-                          >
-                            Save
-                          </Button>
-                          <Button
-                            size="xs"
-                            variant="subtle"
-                            onClick={cancelEduEdit}
-                          >
-                            Cancel
-                          </Button>
-                        </Group>
-                      </Stack>
-                    </div>
-                  </Collapse>
-                </SortableEducationCard>
-              ))}
-            </Stack>
-          </SortableContext>
-        </DndContext>
-
-        {/* + Add Education button */}
-        <Group mt="md">
-          <Button
-            variant="light"
-            onClick={() => {
-              const blank = canonicalizeEdu({});
-              setEdusState((prev) => [...prev, blank]);
-              setEditingEduIndex(edusState.length);
-              setEduDraft(blank);
-              setGpaInput("");
-            }}
-          >
-            + Add Education
-          </Button>
-        </Group>
-      </Card>
+      </Indicator>
     </Container>
   );
 }
