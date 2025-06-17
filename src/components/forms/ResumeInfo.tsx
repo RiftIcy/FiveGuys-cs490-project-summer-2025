@@ -328,15 +328,14 @@ function SortableCategory({
   );
 }
 
-
 export default function ResumeInfo({ data }: ResumeInfoProps) {
   // Create a local cache to save currently working on Draft
   useEffect(() => {
-    if(data._id) {
+    if (data._id) {
       localStorage.setItem("lastResumeId", data._id);
     }
   }, [data._id]);
-  
+
   const sensors = useSensors(useSensor(PointerSensor));
 
   const { name, contact, career_objective, skills, education } = data;
@@ -1195,9 +1194,12 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
     if (editingEduIndex === idx) {
       setEditingEduIndex(null);
       setEduDraft(null);
+      setGpaInput("");  
     } else {
+      const entry = edusState[idx];
       setEditingEduIndex(idx);
-      setEduDraft({ ...edusState[idx] });
+      setEduDraft({ ...entry });
+      setGpaInput(entry.GPA != null ? entry.GPA.toFixed(2) : "");
     }
   }
 
@@ -2519,36 +2521,41 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
                           label="GPA"
                           placeholder="e.g. 3.75"
                           value={gpaInput}
-                          onChange={(e) => {
-                            // strip non-digits, max 3 chars (1 before, 2 after)
-                            const raw = e.currentTarget.value;
-                            const digits = raw.replace(/\D/g, "").slice(0, 3);
-
-                            // auto-insert decimal after first digit
-                            const formatted =
-                              digits.length <= 1
-                                ? digits
-                                : `${digits[0]}.${digits.slice(1)}`;
-
-                            setGpaInput(formatted);
-                            setEduDraft((d) =>
-                              d
-                                ? {
-                                    ...d,
-                                    GPA:
-                                      formatted === ""
-                                        ? null
-                                        : parseFloat(formatted),
-                                  }
-                                : d
-                            );
-                          }}
                           error={
-                            // only validate non-empty inputs, require exactly X.XX
-                            gpaInput && !/^[0-9]\.[0-9]{2}$/.test(gpaInput)
+                            gpaInput && !/^\d(?:\.\d{0,2})?$/.test(gpaInput)
                               ? "Use format X.XX"
                               : null
                           }
+                          onChange={(e) => {
+                            let val = e.currentTarget.value;
+                            // If they’ve typed exactly one digit (e.g. "3"), append the dot
+                            if (/^\d$/.test(val)) {
+                              val = `${val}.`;
+                            }
+                            // Only allow:
+                            //  • a single digit + a dot (“3.”)
+                            //  • or digit + dot + up to 2 decimals (“3.7”, “3.75”)
+                            if (/^\d(?:\.\d{0,2})?$/.test(val) || val === "") {
+                              setGpaInput(val);
+                              // don’t update eduDraft here—wait until blur
+                            }
+                          }}
+                          onBlur={() => {
+                            // Once they leave the field, pad to two decimals and commit to eduDraft
+                            if (
+                              /^\d(?:\.\d{0,2})?$/.test(gpaInput) &&
+                              gpaInput !== ""
+                            ) {
+                              const [intPart, decPart = ""] =
+                                gpaInput.split(".");
+                              const padded =
+                                intPart + "." + (decPart + "00").slice(0, 2);
+                              setGpaInput(padded);
+                              setEduDraft((d) =>
+                                d ? { ...d, GPA: parseFloat(padded) } : d
+                              );
+                            }
+                          }}
                         />
 
                         <Group mt="sm">
@@ -2586,6 +2593,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
               setEdusState((prev) => [...prev, blank]);
               setEditingEduIndex(edusState.length);
               setEduDraft(blank);
+              setGpaInput("");
             }}
           >
             + Add Education
