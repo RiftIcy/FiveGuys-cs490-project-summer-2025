@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useRouter} from "next/navigation";
 import {
   Container,
   Card,
@@ -21,6 +22,7 @@ import {
   UnstyledButton,
   Loader,
   Indicator,
+  Modal,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
@@ -337,7 +339,11 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
     }
   }, [data._id]);
 
+  const router = useRouter();
   const sensors = useSensors(useSensor(PointerSensor));
+
+  const [isReparseModalOpen, setReparseModalOpen] = useState(false);
+  const [reparsing, setReparsing] = useState(false);
 
   const { name, contact, career_objective, skills, education } = data;
 
@@ -400,9 +406,9 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
 
   const isDateInvalid = Boolean(
     jobDraft?.start_date &&
-      jobDraft.end_date &&
-      jobDraft.end_date !== "Present" &&
-      jobDraft.end_date < jobDraft.start_date
+    jobDraft.end_date &&
+    jobDraft.end_date !== "Present" &&
+    jobDraft.end_date < jobDraft.start_date
   );
 
   const startFormatError = Boolean(
@@ -416,14 +422,14 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
   const startDateError = !jobDraft?.start_date
     ? "Start date is required"
     : !/^\d{4}-\d{2}$/.test(jobDraft.start_date)
-    ? "Use format YYYY-MM"
-    : null;
+      ? "Use format YYYY-MM"
+      : null;
 
   const endDateError = !jobDraft?.end_date
     ? "End date is required"
     : !/^(?:\d{4}-\d{2}|present)$/i.test(jobDraft.end_date)
-    ? "Use YYYY-MM or “Present”"
-    : null;
+      ? "Use YYYY-MM or “Present”"
+      : null;
 
   const roleSummaryError = !jobDraft?.role_summary?.trim()
     ? "Role summary is required"
@@ -485,6 +491,32 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
 
   const blockEduUI = editingEduIndex !== null && isEduSaveDisabled;
 
+  const handleReparse = async () => {
+    const notifId = notifications.show({loading: true, title: 'Parsing…', message: 'Re-running parser on your history', autoClose: false, withCloseButton: false});
+
+    setReparsing(true);
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/reparse-history/${data._id}`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Re-parse failed');
+      }
+      notifications.update({id: notifId, loading: false, title: 'Re-parsed!', message: 'History was refreshed.', color: 'teal', autoClose: 2000, withCloseButton: true});
+      window.location.reload();
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      notifications.update({id: notifId, loading: false, title: 'Error', message, color: 'red', autoClose: 4000, withCloseButton: true});
+    }
+    finally {
+      setReparsing(false);
+      setReparseModalOpen(false);
+    }
+  };
+
   const [saving, setSaving] = useState({
     emails: false,
     phones: false,
@@ -493,7 +525,6 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
     jobs: false,
   });
 
-  // at top of component
   const [dirty, setDirty] = useState({
     emails: false,
     phones: false,
@@ -1410,9 +1441,26 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
 
   return (
     <Container size="lg" py="md">
-      <Title order={2} mb="lg">
-        Data Overview
-      </Title>
+      <Group mb="md">
+        <Title order={2} mb="lg">Data Overview</Title>
+        <Button color="red" onClick={() => setReparseModalOpen(true)}>
+          Re-parse History
+        </Button>
+      </Group>
+
+      <Modal opened={isReparseModalOpen} onClose={() => setReparseModalOpen(false)} title="Re-parse history?" centered>
+        <Text size="sm">
+          This will discard any changes made, and re-run the parser. Are you sure?
+        </Text>
+        <Group mt="md">
+          <Button variant="default" onClick={() => setReparseModalOpen(false)} disabled={reparsing}>
+            Cancel
+          </Button>
+          <Button color="red" onClick={handleReparse} loading={reparsing} disabled={reparsing}>
+            Re-parse
+          </Button>
+        </Group>
+      </Modal>
 
       {/* Name */}
       {name && (
@@ -1448,16 +1496,16 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
                       email && email.includes("@")
                         ? []
                         : [
-                            "@gmail.com",
-                            "@yahoo.com",
-                            "@outlook.com",
-                            "@njit.edu",
-                          ]
-                            .map((domain) => {
-                              const prefix = email.trim();
-                              return prefix ? prefix + domain : "";
-                            })
-                            .filter(Boolean)
+                          "@gmail.com",
+                          "@yahoo.com",
+                          "@outlook.com",
+                          "@njit.edu",
+                        ]
+                          .map((domain) => {
+                            const prefix = email.trim();
+                            return prefix ? prefix + domain : "";
+                          })
+                          .filter(Boolean)
                     }
                   />
                   <ActionIcon
@@ -2025,11 +2073,11 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
                           style={
                             dragDisabled
                               ? {
-                                  pointerEvents: "auto",
-                                  position: "relative",
-                                  zIndex: 16,
-                                  background: "white",
-                                }
+                                pointerEvents: "auto",
+                                position: "relative",
+                                zIndex: 16,
+                                background: "white",
+                              }
                               : {}
                           }
                         >
@@ -2098,8 +2146,8 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
                                   !trimmed
                                     ? "Location is required"
                                     : !validLocation
-                                    ? "Please use format: City, State"
-                                    : null
+                                      ? "Please use format: City, State"
+                                      : null
                                 );
                               }}
                               onBlur={() => {
@@ -2113,8 +2161,8 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
                                   !trimmed
                                     ? "Location is required"
                                     : !validLocation
-                                    ? "Please use format: City, State"
-                                    : null
+                                      ? "Please use format: City, State"
+                                      : null
                                 );
                               }}
                             />
@@ -2138,8 +2186,8 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
                                   const masked =
                                     digits.length > 4
                                       ? digits.slice(0, 4) +
-                                        "-" +
-                                        digits.slice(4)
+                                      "-" +
+                                      digits.slice(4)
                                       : digits;
                                   setJobDraft((d) =>
                                     d ? { ...d, start_date: masked } : d
@@ -2174,8 +2222,8 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
                                   const masked =
                                     digits.length > 4
                                       ? digits.slice(0, 4) +
-                                        "-" +
-                                        digits.slice(4)
+                                      "-" +
+                                      digits.slice(4)
                                       : digits;
                                   setJobDraft((d) =>
                                     d ? { ...d, end_date: masked } : d
@@ -2264,12 +2312,12 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
                                 setJobDraft((d) =>
                                   d
                                     ? {
-                                        ...d,
-                                        responsibilities: [
-                                          ...d.responsibilities,
-                                          "",
-                                        ],
-                                      }
+                                      ...d,
+                                      responsibilities: [
+                                        ...d.responsibilities,
+                                        "",
+                                      ],
+                                    }
                                     : d
                                 );
                               }}
@@ -2329,12 +2377,12 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
                                 setJobDraft((d) =>
                                   d
                                     ? {
-                                        ...d,
-                                        accomplishments: [
-                                          ...d.accomplishments,
-                                          "",
-                                        ],
-                                      }
+                                      ...d,
+                                      accomplishments: [
+                                        ...d.accomplishments,
+                                        "",
+                                      ],
+                                    }
                                     : d
                                 );
                               }}
@@ -2390,8 +2438,8 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
                       !trimmed
                         ? "Location is required"
                         : !validLocation
-                        ? "Please use format: City, State"
-                        : null
+                          ? "Please use format: City, State"
+                          : null
                     );
                   }
                 }}
@@ -2519,11 +2567,11 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
                         style={
                           blockEduUI
                             ? {
-                                pointerEvents: "auto",
-                                position: "relative",
-                                zIndex: 16,
-                                background: "white",
-                              }
+                              pointerEvents: "auto",
+                              position: "relative",
+                              zIndex: 16,
+                              background: "white",
+                            }
                             : {}
                         }
                       >
@@ -2536,11 +2584,11 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
                               const val = e.currentTarget.value;
                               setEduDraft((d) =>
                                 canonicalizeEdu(d || {}).institution !==
-                                undefined
+                                  undefined
                                   ? {
-                                      ...canonicalizeEdu(d || {}),
-                                      institution: val,
-                                    }
+                                    ...canonicalizeEdu(d || {}),
+                                    institution: val,
+                                  }
                                   : null
                               );
                             }}
@@ -2583,8 +2631,8 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
                                 !eduDraft?.start_date
                                   ? "Start date is required"
                                   : !/^\d{4}-\d{2}$/.test(eduDraft.start_date)
-                                  ? "Use format YYYY-MM"
-                                  : null
+                                    ? "Use format YYYY-MM"
+                                    : null
                               }
                               onChange={(e) => {
                                 markDirty("education");
@@ -2599,9 +2647,9 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
                                 setEduDraft((d) =>
                                   d
                                     ? {
-                                        ...canonicalizeEdu(d),
-                                        start_date: masked,
-                                      }
+                                      ...canonicalizeEdu(d),
+                                      start_date: masked,
+                                    }
                                     : d
                                 );
                               }}
@@ -2617,14 +2665,14 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
                                 !eduDraft?.end_date
                                   ? "End date is required"
                                   : !/^(?:\d{4}-\d{2}|Present)$/i.test(
-                                      eduDraft.end_date
-                                    )
-                                  ? "Use YYYY-MM or exactly “Present”"
-                                  : eduDraft.start_date &&
-                                    eduDraft.end_date !== "Present" &&
-                                    eduDraft.end_date < eduDraft.start_date
-                                  ? "End date must be later than start date"
-                                  : null
+                                    eduDraft.end_date
+                                  )
+                                    ? "Use YYYY-MM or exactly “Present”"
+                                    : eduDraft.start_date &&
+                                      eduDraft.end_date !== "Present" &&
+                                      eduDraft.end_date < eduDraft.start_date
+                                      ? "End date must be later than start date"
+                                      : null
                               }
                               onChange={(e) => {
                                 markDirty("education");
@@ -2642,17 +2690,17 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
                                   next =
                                     digits.length > 4
                                       ? `${digits.slice(0, 4)}-${digits.slice(
-                                          4
-                                        )}`
+                                        4
+                                      )}`
                                       : digits;
                                 }
 
                                 setEduDraft((d) =>
                                   d
                                     ? {
-                                        ...d,
-                                        end_date: next,
-                                      }
+                                      ...d,
+                                      end_date: next,
+                                    }
                                     : d
                                 );
                               }}
@@ -2735,7 +2783,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
               variant="light"
               onClick={() => {
                 markDirty("education");
-                
+
                 const blank = canonicalizeEdu({});
                 setEdusState((prev) => [...prev, blank]);
                 setEditingEduIndex(edusState.length);

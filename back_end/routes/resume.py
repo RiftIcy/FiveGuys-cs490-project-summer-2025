@@ -1,8 +1,12 @@
 from flask import Blueprint, request, jsonify
 from bson import ObjectId
+import tempfile
+import os
 import re
 import sys
 from db import biography_collection
+from parser.extractors import extract_text
+from parser.parser import ResumeParser
 
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 PHONE_REGEX = re.compile(r"^\d{3}-\d{3}-\d{4}$")
@@ -370,3 +374,52 @@ def get_resume(resume_id):
         "education": doc.get("parse_result", {}).get("educations", []),
     }
     return jsonify(result), 200
+
+@resume_bp.route("/api/reparse-history/<resume_id>", methods=["POST"])
+def reparse_resume(resume_id):
+    # 1) validate ID
+    if not ObjectId.is_valid(resume_id):
+        return jsonify({"error": "Invalid resume ID"}), 400
+
+    # 2) fetch the stored document
+    doc = biography_collection.find_one({"_id": ObjectId(resume_id)})
+    if not doc:
+        return jsonify({"error": "Resume not found"}), 404
+
+    # 3) determine source for re-parsing
+    if doc.get("file_content") and doc.get("filename"):
+        # write out a temp file with the correct suffix so extract_text can dispatch
+        suffix = os.path.splitext(doc["filename"])[1]  # e.g. ".pdf", ".docx", ".txt", etc.
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(doc["file_content"])
+            tmp_path = tmp.name
+        try:
+            text = extract_text(tmp_path)
+        finally:
+            os.remove(tmp_path)
+
+    elif doc.get("biography_text"):
+        # no original file—fall back to the raw text the user pasted
+        text = doc["biography_text"]
+
+    else:
+        return jsonify({"error": "No source to re-parse"}), 400
+
+    # 4) re-run the LLM parser on that fresh text
+    parser = ResumeParser()
+    try:
+        new_parse = parser.parse(text)
+    except Exception as e:
+        return jsonify({"error": f"Re-parse failed: {e}"}), 500
+
+    # 5) overwrite parse_result wholesale
+    biography_collection.update_one(
+        {"_id": ObjectId(resume_id)},
+        {"$set": {"parse_result": new_parse}}
+    )
+
+    # 6) return the brand-new structure
+    return jsonify({
+        "message": "Re-parse successful",
+        "parse_result": new_parse
+    }), 200
