@@ -328,7 +328,15 @@ function SortableCategory({
   );
 }
 
+
 export default function ResumeInfo({ data }: ResumeInfoProps) {
+  // Create a local cache to save currently working on Draft
+  useEffect(() => {
+    if(data._id) {
+      localStorage.setItem("lastResumeId", data._id);
+    }
+  }, [data._id]);
+  
   const sensors = useSensors(useSensor(PointerSensor));
 
   const { name, contact, career_objective, skills, education } = data;

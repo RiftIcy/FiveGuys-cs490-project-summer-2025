@@ -10,7 +10,7 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
 } from "@/components/ui/dropdown-menu"; // Import Shadcn dropdown components
-import { useRouter, usePathname } from "next/navigation"; // Import usePathname
+import { useRouter, usePathname, useParams } from "next/navigation"; // Import usePathname
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
@@ -21,6 +21,8 @@ interface TopBannerProps {
 export default function TopBanner({ toggleSidePanel }: TopBannerProps) {
     const router = useRouter();
     const pathname = usePathname(); // Get the current path
+    const params = useParams();
+    const resumeId = params?.resumeId;
 
     // Get current user
     const user = auth.currentUser;
@@ -40,9 +42,16 @@ export default function TopBanner({ toggleSidePanel }: TopBannerProps) {
     const pageTitles: { [key: string]: string } = {
         "/home": "Home",
         "/home/settings": "Settings",
+        "/home/resume_builder": "Upload", 
     };
+    
+    let pageTitle = pageTitles[pathname]; // Default to "Page" if no match
 
-    const pageTitle = pageTitles[pathname] || "Page"; // Default to "Page" if no match
+    if(!pageTitle && pathname.startsWith("/home/resume_editor")) {
+        pageTitle = "Resume Editor";
+    }
+
+    pageTitle = pageTitle || "Page";
 
     const handleLogout = async () => {
         try {
