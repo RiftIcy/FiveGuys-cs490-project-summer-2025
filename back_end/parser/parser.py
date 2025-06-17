@@ -32,7 +32,7 @@ class ResumeParser:
                         "- jobs: list of job objects (or []), each with:\n"
                         "   - title: string (or null),\n"
                         "   - company: string (or null),\n"
-                        "   - location: string (or null),\n"
+                        "   - location: string \"City,State\" (or null),\n"
                         "   - start_date: string \"YYYY-MM\" (or null),\n"
                         "   - end_date: string \"YYYY-MM\"|\"Present\" (or null),\n"
                         "   - role_summary: string (or null),\n"
@@ -41,7 +41,8 @@ class ResumeParser:
                         "- education: list of education objects (or []), each with:"
                         "   - degree: string (or null),"
                         "   - institution: string (or null),\n"
-                        "   - graduation_date: string (or null),\n"
+                        "   - start_date: string \"YYYY-MM\" (or null),\n"
+                        "   - end_date: string \"YYYY-MM\"|\"Present\" (or null),\n"
                         "   - GPA: number (or null)\n\n"
                         "Output only valid JSON.  Do not include any explanations, formatting, or comments."
                     )
