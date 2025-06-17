@@ -27,7 +27,7 @@ class ResumeParser:
                         "- contact: object (or {}) with:\n"
                         "   - emails: list of strings (first is primary) (or [])\n"
                         "   - phones: list of strings (first is primary) (or []) and the phone number should be of the form xxx-xxx-xxxx\n"
-                        "- career_objective: string (or null)\n"
+                        "- career_objective: Look for a few sentences summary of a job seeker's professional goals, what role they are pursuing, and how they intend to add value to a company. string (or null)\n"
                         "- skills: object mapping category → list of strings (or {}) If there are duplicates ignore them and only use one of them that includes categories as well\n"
                         "- jobs: list of job objects (or []), each with:\n"
                         "   - title: string (or null),\n"
