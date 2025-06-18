@@ -288,12 +288,12 @@ def add_education(resume_id):
     if not doc:
         return jsonify({"error": "Resume not found"}), 404
 
-    educations = doc.get("parse_result", {}).get("educations", [])
+    educations = doc.get("parse_result", {}).get("education", [])
     educations.append(newEdu)
 
     biography_collection.update_one(
         {"_id": ObjectId(resume_id)},
-        {"$set": {"parse_result.educations": educations}}
+        {"$set": {"parse_result.education": educations}}
     )
     return jsonify({"success": True}), 200
 
@@ -349,17 +349,24 @@ def delete_education(resume_id, index):
     if not doc:
         return jsonify({"error": "Resume not found"}), 404
 
-    educations = doc.get("parse_result", {}).get("educations", [])
-    if index < 0 or index >= len(educations):
-        return jsonify({"error": "Invalid education index"}), 400
+    parse_result = doc.get("parse_result", {})
+    edus = parse_result.get("education", [])
+    if not isinstance(edus, list):
+        return jsonify({"error": "Malformed education data"}), 500
 
-    educations.pop(index)
+    if index < 0 or index >= len(edus):
+        return jsonify({"error": f"Invalid index: {index}"}), 400
 
-    biography_collection.update_one(
+    # Remove the item
+    edus.pop(index)
+
+    result = biography_collection.update_one(
         {"_id": ObjectId(resume_id)},
-        {"$set": {"parse_result.educations": educations}}
+        {"$set": {"parse_result.education": edus}}
     )
-    return jsonify({"success": True}), 200
+
+    return jsonify({"message": "Education entry deleted"}), 200
+
 
 
 
@@ -374,7 +381,7 @@ def set_educations(resume_id):
 
     biography_collection.update_one(
         {"_id": ObjectId(resume_id)},
-        {"$set": {"parse_result.educations": newList}}
+        {"$set": {"parse_result.education": newList}}
     )
     return jsonify({"success": True}), 200
 
@@ -385,7 +392,7 @@ def get_resume(resume_id):
     # …
     result = {
         # other fields…
-        "education": doc.get("parse_result", {}).get("educations", []),
+        "education": doc.get("parse_result", {}).get("education", []),
     }
     return jsonify(result), 200
 
