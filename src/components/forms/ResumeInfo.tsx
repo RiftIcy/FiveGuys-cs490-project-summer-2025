@@ -1699,7 +1699,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
         {/* Name */}
         {name && (
           <Card withBorder mb="md" shadow="sm">
-            <Title order={3}>Name</Title>
+            <Title order={3}>Resume Title</Title>
             <Text mt="sm">{name}</Text>
           </Card>
         )}
@@ -1709,6 +1709,9 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
           {contact && (
             <Card withBorder mb="md" shadow="sm">
               <Title order={3}>Contact Information</Title>
+
+              <Title order={3}>Name</Title>
+              <Text mt="sm">{name}</Text>
 
               {/* Email Section */}
               <Indicator
