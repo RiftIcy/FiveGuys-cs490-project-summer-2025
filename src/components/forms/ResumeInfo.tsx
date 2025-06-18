@@ -489,7 +489,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
     !eduDraft.institution?.trim() ||
     !eduDraft.degree?.trim() ||
     !/^\d{4}-\d{2}$/.test(eduDraft.start_date || "") ||
-    !/^\d{4}-\d{2}$/.test(eduDraft.end_date || "");
+    !/^(\d{4}-\d{2}|Present)$/i.test(eduDraft.end_date || "");
 
   const [gpaInput, setGpaInput] = useState<string>(
     eduDraft?.GPA != null ? eduDraft.GPA.toFixed(2) : ""
