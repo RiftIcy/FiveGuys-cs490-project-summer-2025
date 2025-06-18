@@ -1535,11 +1535,12 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
       });
     }
     if (editingIndex !== null) {
-      const err = validateJobEntry(jobsState[editingIndex]);
+      // Dont allow to save while a Job form is open
+      const err = validateJobEntry(jobDraft!);
       if (err) {
         return notifications.show({
           title: "Cannot save",
-          message: "One of your job entries is invalid—please fix it first.",
+          message: `Your open job entry is invalid: ${err}`,
           color: "red",
         });
       }
