@@ -9,3 +9,4 @@ MONGO_URI = os.getenv("MONGO_URI")
 client = MongoClient(MONGO_URI)
 db = client['fiveguys']
 biography_collection = db['biographies']
+job_ads_collection = db['job ads']

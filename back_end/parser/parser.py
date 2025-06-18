@@ -54,5 +54,50 @@ class ResumeParser:
             temperature=0.0,
         )
         return json.loads(resp.choices[0].message.content)
+    
+class JobAdParser:
+    """
+    Wrap OpenAI chat API to parse job ad text into structured JSON.
+    """
+    def __init__(self, api_key: str = None):
+        key = api_key or OPENAI_API_KEY
+        if not key:
+            raise ValueError("OpenAI API key must be set in OPENAI_API_KEY")
+        self.client = OpenAI(api_key=key)
+
+    def parse(self, text: str) -> dict:
+        resp = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            response_format={"type": "json_object"},
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Treat all of the following sections as optional. "
+                        "Always include **all** of these top-level keys in your JSON output. "
+                        "If a section has no data, use null for strings, [] for lists, and {} for objects. "
+                        "The input text may contain job postings from online job boards, copied HTML, company websites, or mixed text formats. "
+
+                        "Return JSON with the following keys: "
+                        "- job_title: string (or null) "
+                        "- company: string (or null) "
+                        "- location: string (or null) "
+                        "- employment_type: string (e.g. 'Full-time', 'Part-time', 'Contract', 'Internship') (or null) "
+                        "- salary_range: Extract from the job posting, in the form '$xxx,xxx - $xxx,xxx' or similar. Do not confuse with 401k or other unrelated numbers. "
+                        "- required_experience: string (or null) "
+                        "- required_education: string (or null) "
+                        "- job_description: A paragraph (2-4 sentences) summarizing the role, written in prose. If no clear paragraph is provided, synthesize one from any 'Role Overview', 'About Us', or opening paragraphs. Do not copy responsibilities."
+                        "- responsibilities: list of strings (or []) "
+                        "- qualifications: list of strings (or []) "
+                        "- benefits: list of strings (or []) "
+                        "Output only valid JSON. Do not include any explanations, formatting, or comments."
+                    )
+
+                },
+                {"role": "user", "content": text},
+            ],
+            temperature=0.0,
+        )
+        return json.loads(resp.choices[0].message.content)
 
 #{"role": "system", "content": "Return JSON with keys: name, contact, skills, education, jobs."},
