@@ -1467,6 +1467,147 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
       setSaving((prev) => ({ ...prev, jobs: false }));
     }
   }
+  function validateJobEntry(job: JobEntry): string | null {
+    if (!job.title?.trim()) return "Every job needs a title.";
+    if (!job.company?.trim()) return "Every job needs a company.";
+    if (!job.location?.trim()) return "Every job needs a location.";
+    if (!/^\d{4}-\d{2}$/.test(job.start_date ?? ""))
+      return "Start date must be YYYY-MM.";
+    if (!/^(?:\d{4}-\d{2}|Present)$/i.test(job.end_date ?? ""))
+      return "End date must be YYYY-MM or Present.";
+    if (job.end_date !== "Present" && job.start_date! > job.end_date!)
+      return "End date must come after start date.";
+    if (!job.role_summary?.trim()) return "Every job needs a role summary.";
+    if (
+      (!job.responsibilities.length ||
+        job.responsibilities.every((r) => !r.trim())) &&
+      (!job.accomplishments.length ||
+        job.accomplishments.every((a) => !a.trim()))
+    )
+      return "Each job needs at least one responsibility or accomplishment.";
+    if (job.responsibilities.some((r) => !r.trim()))
+      return "Responsibilities cannot be blank.";
+    if (job.accomplishments.some((a) => !a.trim()))
+      return "Accomplishments cannot be blank.";
+    return null;
+  }
+
+  function validateEduEntry(edu: EduEntry): string | null {
+    if (!edu.institution?.trim()) return "Each education needs an institution.";
+    if (!edu.degree?.trim()) return "Each education needs a degree.";
+    if (!/^\d{4}-\d{2}$/.test(edu.start_date ?? ""))
+      return "Edu start date must be YYYY-MM.";
+    if (!/^(?:\d{4}-\d{2}|Present)$/i.test(edu.end_date ?? ""))
+      return "Edu end date must be YYYY-MM or Present.";
+    if (edu.end_date !== "Present" && edu.start_date! > edu.end_date!)
+      return "Edu end date must come after start.";
+    return null;
+  }
+
+  async function handleSaveAll() {
+    // 1) Check validation errors in each section
+    if (emailErrors.some(Boolean)) {
+      return notifications.show({
+        title: "Cannot save",
+        message: "Fix invalid email(s) before saving all.",
+        color: "red",
+      });
+    }
+    if (phoneErrors.some(Boolean)) {
+      return notifications.show({
+        title: "Cannot save",
+        message: "Fix invalid phone number(s) before saving all.",
+        color: "red",
+      });
+    }
+    if (!objective.trim() || objectiveError) {
+      return notifications.show({
+        title: "Cannot save",
+        message: "Your career objective is empty or invalid.",
+        color: "red",
+      });
+    }
+    if (skillSaveValidationMessage) {
+      return notifications.show({
+        title: "Cannot save",
+        message: skillSaveValidationMessage,
+        color: "red",
+      });
+    }
+    if (editingIndex !== null) {
+      const err = validateJobEntry(jobsState[editingIndex]);
+      if (err) {
+        return notifications.show({
+          title: "Cannot save",
+          message: "One of your job entries is invalid—please fix it first.",
+          color: "red",
+        });
+      }
+    }
+    if (editingEduIndex !== null && isEduSaveDisabled) {
+      return notifications.show({
+        title: "Cannot save",
+        message:
+          "One of your education entries is invalid—please fix it first.",
+        color: "red",
+      });
+    }
+    for (let i = 0; i < jobsState.length; i++) {
+      const err = validateJobEntry(jobsState[i]);
+      if (err) {
+        return notifications.show({
+          title: "Cannot save",
+          message: `Row ${i + 1} in Job History: ${err}`,
+          color: "red",
+        });
+      }
+    }
+    for (let i = 0; i < edusState.length; i++) {
+      const err = validateEduEntry(edusState[i]);
+      if (err) {
+        return notifications.show({
+          title: "Cannot save",
+          message: `Row ${i + 1} in Education: ${err}`,
+          color: "red",
+        });
+      }
+    }
+    // If no errors save everything
+    try {
+      await Promise.all([
+        saveEmails(),
+        savePhones(),
+        saveCareerObjective(),
+        saveSkills(),
+      ]);
+
+      // Save each job entry
+      for (let i = 0; i < jobsState.length; i++) {
+        const err = validateJobEntry(jobsState[i]);
+        await saveJob(i);
+      }
+      await saveJobOrder(jobsState);
+
+      // Save each education entry
+      for (let i = 0; i < edusState.length; i++) {
+        await saveEdu(i);
+      }
+      await saveEduOrder(edusState);
+
+      notifications.show({
+        title: "All Saved",
+        message: "Everything has been saved successfully!",
+        color: "teal",
+      });
+    } catch (err) {
+      // in case any of the saves threw
+      notifications.show({
+        title: "Error",
+        message: "Something went wrong saving—please try again.",
+        color: "red",
+      });
+    }
+  }
 
   return (
     <Container size="lg" py="md">
@@ -1474,6 +1615,19 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
         <Title order={2} mb="lg">
           Data Overview
         </Title>
+        <Button
+          onClick={handleSaveAll}
+          loading={
+            saving.emails ||
+            saving.phones ||
+            saving.objective ||
+            saving.skills ||
+            saving.jobs
+          }
+        >
+          {" "}
+          Save All
+        </Button>
         <Button color="red" onClick={() => setReparseModalOpen(true)}>
           Re-parse History
         </Button>
@@ -1490,25 +1644,25 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
           <Tabs.Tab value="objective">
             <Group>
               <IconClipboardText size={16} />
-              Contact
+              objective
             </Group>
           </Tabs.Tab>
           <Tabs.Tab value="skills">
             <Group>
               <IconBolt size={16} />
-              Contact
+              skills
             </Group>
           </Tabs.Tab>
           <Tabs.Tab value="jobs">
             <Group>
               <IconBriefcase size={16} />
-              Contact
+              jobs
             </Group>
           </Tabs.Tab>
           <Tabs.Tab value="education">
             <Group>
               <IconSchool size={16} />
-              Contact
+              education
             </Group>
           </Tabs.Tab>
         </Tabs.List>
