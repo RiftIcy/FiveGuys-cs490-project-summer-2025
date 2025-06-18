@@ -9,6 +9,7 @@ import '@mantine/core/styles.css';
 import { ColorSchemeScript, MantineProvider, mantineHtmlProps } from '@mantine/core';
 import '@mantine/notifications/styles.css';
 import { Notifications } from "@mantine/notifications";
+import { ThemeProvider } from "@/context/themeContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -52,7 +53,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <MantineProvider>
+        <ThemeProvider>
           <Notifications></Notifications>
           <AuthProvider>
             <AppThemeProvider>
@@ -60,7 +61,7 @@ export default function RootLayout({
               {children}
             </AppThemeProvider>
           </AuthProvider>
-        </MantineProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

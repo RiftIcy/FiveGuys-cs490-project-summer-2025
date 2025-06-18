@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
+import { MantineProvider } from "@mantine/core";
 
 type ThemeType = "system" | "light" | "dark";
 
@@ -67,6 +68,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return () => unsubscribe();
     }, []);
 
+    // Compute resolved scheme for Mantine
+    const resolvedScheme: "light" | "dark" =
+        theme === "system"
+            ? (typeof window !== 'undefined' && window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light")
+            : theme;
+
     useEffect(() => {
         const root = window.document.documentElement;
 
@@ -115,7 +124,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     return (
         <ThemeContext.Provider value={{ theme, setTheme }}>
-            {children}
+            <MantineProvider defaultColorScheme={resolvedScheme} forceColorScheme={resolvedScheme}>
+                {children}
+            </MantineProvider>
         </ThemeContext.Provider>
     );
 };
