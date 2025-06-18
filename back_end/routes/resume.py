@@ -301,29 +301,43 @@ def add_education(resume_id):
 
 @resume_bp.route("/resume/<resume_id>/update_education/<int:index>", methods=["POST"])
 def update_education(resume_id, index):
+    # 1) Validate ID
     if not ObjectId.is_valid(resume_id):
         return jsonify({"error": "Invalid resume ID"}), 400
-    data = request.get_json() or {}
-    updatedEdu = data.get("updatedEdu")
-    if not isinstance(updatedEdu, dict):
-        return jsonify({"error": "Missing updatedEdu payload"}), 400
+    
+    # 2) Validate payload
+    data = request.get_json(silent=True)
+    if not data or "updatedEdu" not in data:
+        return jsonify({"error": "Missing 'updatedEdu' in request body"}), 400
+    updated = data["updatedEdu"]
 
+    # 3) Fetch existing document
     doc = biography_collection.find_one({"_id": ObjectId(resume_id)})
     if not doc:
         return jsonify({"error": "Resume not found"}), 404
 
-    educations = doc.get("parse_result", {}).get("educations", [])
-    if index < 0 or index >= len(educations):
-        return jsonify({"error": "Invalid education index"}), 400
-
-    educations[index] = updatedEdu
-
-    biography_collection.update_one(
-        {"_id": ObjectId(resume_id)},
-        {"$set": {"parse_result.educations": educations}}
-    )
+    # 4) Ensure we have an education array
+    parse_result = doc.get("parse_result", {})
+    edus = parse_result.get("education", [])
+    if not isinstance(edus, list):
+        return jsonify({"error": "Malformed education data"}), 500
+    
+    # 5) Perform in-place update or push
+    try:
+        if index < len(edus):
+            biography_collection.update_one(
+                {"_id": ObjectId(resume_id)},
+                {"$set": {f"parse_result.education.{index}": updated}}
+            )
+        else:
+            # append as a new entry
+            biography_collection.update_one(
+                {"_id": ObjectId(resume_id)},
+                {"$push": {"parse_result.education": updated}}
+            )
+    except Exception as e:
+        return jsonify({"error": f"Database update failed: {str(e)}"}), 500
     return jsonify({"success": True}), 200
-
 
 
 @resume_bp.route("/resume/<resume_id>/delete_education/<int:index>", methods=["DELETE"])
