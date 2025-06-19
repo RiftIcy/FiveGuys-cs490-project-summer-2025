@@ -18,6 +18,7 @@ import {
   IconClipboardList,
   IconDatabaseImport,
   IconFile,
+  IconFileCheck,
   IconFingerprint,
   IconHome,
   IconKey,
@@ -61,8 +62,9 @@ export default function SidePanel({ hidden }: SidePanelProps) {
     { link: '/home/', label: 'Main', icon: IconHome },
     { link: '/home/resume_builder', label: 'Start New', icon: IconFileText  },
     { link: lastId ? `/home/resume_editor/${lastId}` : "#", label: 'Continue', icon: IconClipboardList, disabled: !lastId },
-    { link: "/home/completed", label: "Completed Resumes", icon: IconClipboardCheckFilled },
-    { link: '/home/resumes', label: 'My Resumes', icon: IconFolder  },
+    { link: "/home/completed_forms", label: "Completed Forms", icon: IconFileCheck },
+    { link: "/home/completed_resumes", label: "Completed Resumes", icon: IconClipboardCheckFilled },
+    { link: '/home/drafts', label: 'My Drafts', icon: IconFolder  },
     { link: '/home/settings', label: 'Settings', icon: IconSettings },
   ] as const;
 

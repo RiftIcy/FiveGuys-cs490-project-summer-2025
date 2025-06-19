@@ -494,3 +494,13 @@ def list_resumes():
     # shape each doc to { _id, name }
     results = [{"_id": str(d["_id"]), "name": d.get("name")} for d in docs]
     return jsonify(results), 200
+
+@resume_bp.route("/resume/<resume_id>", methods=["DELETE"])
+def delete_resume(resume_id):
+    if not ObjectId.is_valid(resume_id):
+        return jsonify({"error": "Invalid resume ID"}), 400
+    
+    result = biography_collection.delete_one({"_id": ObjectId(resume_id)})
+    if result.deleted_count == 0:
+        return jsonify({"error": "Resume not found"}), 404
+    return jsonify({"message": "Resume deleted"}), 200

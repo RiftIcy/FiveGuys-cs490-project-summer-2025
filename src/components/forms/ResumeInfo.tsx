@@ -1657,7 +1657,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
         body: JSON.stringify({ isComplete: true }),
       });
       removeFromCache(data._id!); 
-      router.push("/home/completed");
+      router.push("/home/completed_forms");
     } catch (err) {
       notifications.show({
         title: "Error",
