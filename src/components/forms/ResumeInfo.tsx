@@ -511,6 +511,9 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
 
   const blockEduUI = editingEduIndex !== null && isEduSaveDisabled;
 
+  // Allow me to press continue button
+  const [hasSavedAll, setHasSavedAll] = useState(false);
+
   const handleReparse = async () => {
     const notifId = notifications.show({
       loading: true,
@@ -1614,6 +1617,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
         message: "Everything has been saved successfully!",
         color: "teal",
       });
+      setHasSavedAll(true);
     } catch (err) {
       // in case any of the saves threw
       notifications.show({
@@ -1623,21 +1627,30 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
       });
     }
   }
-  // Allow me to press continue button
-  const canContinue =
-    !emailErrors.some(Boolean) &&
-    !phoneErrors.some(Boolean) &&
-    !objectiveError &&
-    !skillSaveValidationMessage &&
-    editingIndex === null &&
-    editingEduIndex === null &&
-    Object.values(dirty).every((d) => d === false);
+
+  function hasMissingRequiredForms() {
+    // Emails and phones must each have at least one
+    if (emails.length === 0 || phones.length === 0) return true;
+    // Objective must be non-empty
+    if (!objective.trim()) return true;
+    // Skills — at least one category with > 0 skills
+    if (skillSaveValidationMessage) return true;
+    // No jobs or educations should be mid-edit
+    if (editingIndex !== null || editingEduIndex !== null) return true;
+    // All saved job rows must validate
+    if (jobsState.some((j) => validateJobEntry(j) !== null)) return true;
+    // All saved education rows must validate
+    if (edusState.some((e) => validateEduEntry(e) !== null)) return true;
+
+    return false
+  }
+
+  const canContinue = hasSavedAll && !hasMissingRequiredForms();
 
   // Define the continue handler:
   async function handleContinue() {
     setSavingContinue(true);
     try {
-      await handleSaveAll();
       await fetch(`http://localhost:5000/resume/${data._id}/set_complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
