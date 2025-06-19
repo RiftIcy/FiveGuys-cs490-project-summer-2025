@@ -60,6 +60,8 @@ interface ResumeInfoProps {
   data: {
     _id?: string;
     name?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
     contact?: {
       phones?: string[];
       emails?: string[];
@@ -351,7 +353,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
   const [isReparseModalOpen, setReparseModalOpen] = useState(false);
   const [reparsing, setReparsing] = useState(false);
 
-  const { name, contact, career_objective, skills, education } = data;
+  const { name, first_name, last_name, contact, career_objective, skills, education } = data;
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -1645,25 +1647,25 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
           <Tabs.Tab value="objective">
             <Group>
               <IconClipboardText size={16} />
-              objective
+              Objective
             </Group>
           </Tabs.Tab>
           <Tabs.Tab value="skills">
             <Group>
               <IconBolt size={16} />
-              skills
+              Skills
             </Group>
           </Tabs.Tab>
           <Tabs.Tab value="jobs">
             <Group>
               <IconBriefcase size={16} />
-              jobs
+              Jobs
             </Group>
           </Tabs.Tab>
           <Tabs.Tab value="education">
             <Group>
               <IconSchool size={16} />
-              education
+              Education
             </Group>
           </Tabs.Tab>
         </Tabs.List>
@@ -1712,7 +1714,7 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
               <Title order={3}>Contact Information</Title>
 
               <Title order={3}>Name</Title>
-              <Text mt="sm">{name}</Text>
+              <Text mt="sm">{first_name || last_name ? [first_name, last_name].filter(Boolean).join(" ") : "—"}</Text>
 
               {/* Email Section */}
               <Indicator

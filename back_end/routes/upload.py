@@ -15,13 +15,20 @@ upload_bp = Blueprint("upload", __name__)
 
 @upload_bp.route("/upload", methods=["POST"])
 def upload():
+    # 1) Read & validate the “name” field:
+    name = request.form.get("name", "").strip()
+    if not name:
+        return jsonify({"error": "Resume name is required"}), 400
+    
+    # 2) Get the rest of your inputs
     file = request.files.get("file")
     biography_text = request.form.get("biography")
 
     if not file and not biography_text:
         return jsonify({"error": "No file or biography text provided"}), 400
 
-    doc = {}
+    # 3) Build up your document, starting with the name
+    doc = {"name": name}
 
     # If file submitted
     if file:

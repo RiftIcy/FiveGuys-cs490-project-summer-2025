@@ -387,14 +387,34 @@ def set_educations(resume_id):
 
 @resume_bp.route("/resume/<resume_id>", methods=["GET"])
 def get_resume(resume_id):
-    # …
+    # 1) Validate resume_id
+    if not ObjectId.is_valid(resume_id):
+        return jsonify({"error": "Invalid resume ID"}), 400
+    
+    # 2) Load document
     doc = biography_collection.find_one({"_id": ObjectId(resume_id)})
-    # …
-    result = {
-        # other fields…
-        "education": doc.get("parse_result", {}).get("education", []),
+    if not doc:
+        return jsonify({"error": "Resume not found"}), 404
+    
+    # 3) Pull everything out of parse_result
+    parse = doc.get("parse_result", {})
+
+    # 4) Shape the payload exactly as ResumeInfo expects
+    payload = {
+        "_id": str(doc["_id"]),
+        "name": doc.get("name"),
+        "first_name": parse.get("first_name"),
+        "last_name":  parse.get("last_name"),
+        "contact": {
+            "emails": parse.get("contact", {}).get("emails", []),
+            "phones": parse.get("contact", {}).get("phones", []),
+        },
+        "career_objective": parse.get("career_objective", ""),
+        "skills": parse.get("skills", {}),
+        "jobs": parse.get("jobs", []),
+        "education": parse.get("education", []),
     }
-    return jsonify(result), 200
+    return  jsonify(payload), 200
 
 @resume_bp.route("/api/reparse-history/<resume_id>", methods=["POST"])
 def reparse_resume(resume_id):

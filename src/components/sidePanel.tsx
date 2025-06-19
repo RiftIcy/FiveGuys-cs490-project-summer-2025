@@ -23,6 +23,7 @@ import {
 } from '@tabler/icons-react';
 import { Code, Group } from '@mantine/core';
 import { MantineLogo } from '@mantinex/mantine-logo';
+import { listCachedResumes } from "@/lib/resumeCache";
 import classes from '@/styles/sidePanel.module.css';
 
 interface SidePanelProps {
@@ -39,18 +40,22 @@ interface MenuItem {
 export default function SidePanel({ hidden }: SidePanelProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [lastId, setLastId] = useState<string | null>(null);
   const [active, setActive] = useState('Main');
 
+  // grab the most recent saved resume from our LRU cache
+  const [lastId, setLastId] = useState<string | null>(null);
   useEffect(() => {
-    setLastId(localStorage.getItem("lastResumeId"));
+    const cached = listCachedResumes();
+    setLastId(cached.length > 0 ? cached[0].id : null);
   }, [pathname]);
 
+  
+  // define the menu items in the desired order
   const menuItems: MenuItem[] = [
     { link: '/home/', label: 'Main', icon: IconHome },
-    { link: '/home/resume_builder', label: 'Upload File', icon: IconFile },
-    { link: lastId ? `/home/resume_editor/${lastId}` : "#", label: 'Continue Editing', icon: IconClipboardList, disabled: !lastId },
-    { link: '', label: 'Completed Resumes', icon: IconClipboardCheckFilled },
+    { link: '/home/resume_builder', label: 'Start New', icon: IconFile },
+    { link: lastId ? `/home/resume_editor/${lastId}` : "#", label: 'Continue', icon: IconClipboardList, disabled: !lastId },
+    { link: '/home/resumes', label: 'My Resumes', icon: IconClipboardCheckFilled },
     { link: '/home/settings', label: 'Settings', icon: IconSettings },
   ] as const;
 
