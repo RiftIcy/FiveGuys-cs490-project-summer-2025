@@ -49,3 +49,9 @@ export function getCachedResume(id: string): CacheEntry | null {
 export function listCachedResumes(): CacheEntry[] {
     return readCache();
 }
+
+/** Remove a resume from the cache by its id */
+export function removeFromCache(id: string) {
+  const entries = readCache().filter(e => e.id !== id);
+  writeCache(entries);
+}
