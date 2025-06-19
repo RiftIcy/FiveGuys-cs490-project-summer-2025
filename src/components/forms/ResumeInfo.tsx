@@ -54,6 +54,7 @@ import {
 } from "@dnd-kit/sortable";
 import SortableJobCard from "@/components/ui/SortableJobCard";
 import SortableEducationCard from "@/components/ui/SortableEducationCard";
+import { removeFromCache } from "@/lib/resumeCache";
 import { CSS } from "@dnd-kit/utilities";
 
 interface ResumeInfoProps {
@@ -347,13 +348,24 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
     }
   }, [data._id]);
 
+  //Flag to decide if a resume is complete
+  const [savingContinue, setSavingContinue] = useState(false);
+
   const router = useRouter();
   const sensors = useSensors(useSensor(PointerSensor));
 
   const [isReparseModalOpen, setReparseModalOpen] = useState(false);
   const [reparsing, setReparsing] = useState(false);
 
-  const { name, first_name, last_name, contact, career_objective, skills, education } = data;
+  const {
+    name,
+    first_name,
+    last_name,
+    contact,
+    career_objective,
+    skills,
+    education,
+  } = data;
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -1611,6 +1623,38 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
       });
     }
   }
+  // Allow me to press continue button
+  const canContinue =
+    !emailErrors.some(Boolean) &&
+    !phoneErrors.some(Boolean) &&
+    !objectiveError &&
+    !skillSaveValidationMessage &&
+    editingIndex === null &&
+    editingEduIndex === null &&
+    Object.values(dirty).every((d) => d === false);
+
+  // Define the continue handler:
+  async function handleContinue() {
+    setSavingContinue(true);
+    try {
+      await handleSaveAll();
+      await fetch(`http://localhost:5000/resume/${data._id}/set_complete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isComplete: true }),
+      });
+      removeFromCache(data._id!); 
+      router.push("/home/completed");
+    } catch (err) {
+      notifications.show({
+        title: "Error",
+        message: "Could not complete resume.",
+        color: "red",
+      });
+    } finally {
+      setSavingContinue(false);
+    }
+  }
 
   return (
     <Container size="lg" py="md">
@@ -1714,7 +1758,11 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
               <Title order={3}>Contact Information</Title>
 
               <Title order={3}>Name</Title>
-              <Text mt="sm">{first_name || last_name ? [first_name, last_name].filter(Boolean).join(" ") : "—"}</Text>
+              <Text mt="sm">
+                {first_name || last_name
+                  ? [first_name, last_name].filter(Boolean).join(" ")
+                  : "—"}
+              </Text>
 
               {/* Email Section */}
               <Indicator
@@ -3083,6 +3131,15 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
           </Indicator>
         </Tabs.Panel>
       </Tabs>
+      <Group mt="md">
+        <Button
+          onClick={handleContinue}
+          disabled={!canContinue}
+          loading={savingContinue}
+        >
+          Complete Resume
+        </Button>
+      </Group>
     </Container>
   );
 }

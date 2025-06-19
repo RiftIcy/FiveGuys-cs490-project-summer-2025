@@ -29,6 +29,7 @@ def upload():
 
     # 3) Build up your document, starting with the name
     doc = {"name": name}
+    doc["isComplete"] = False
 
     # If file submitted
     if file:

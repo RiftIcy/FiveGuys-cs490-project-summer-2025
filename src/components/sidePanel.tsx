@@ -5,6 +5,11 @@ import { useRouter, usePathname  } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import {
+  IconDashboard,
+  IconFileText,
+  IconHistory,
+  IconFolder,
+  IconAdjustments,
   Icon2fa,
   IconBellRinging,
   IconClipboard,
@@ -25,6 +30,7 @@ import { Code, Group } from '@mantine/core';
 import { MantineLogo } from '@mantinex/mantine-logo';
 import { listCachedResumes } from "@/lib/resumeCache";
 import classes from '@/styles/sidePanel.module.css';
+import { ClipboardCheckIcon } from 'lucide-react';
 
 interface SidePanelProps {
   hidden?: boolean;
@@ -53,9 +59,10 @@ export default function SidePanel({ hidden }: SidePanelProps) {
   // define the menu items in the desired order
   const menuItems: MenuItem[] = [
     { link: '/home/', label: 'Main', icon: IconHome },
-    { link: '/home/resume_builder', label: 'Start New', icon: IconFile },
+    { link: '/home/resume_builder', label: 'Start New', icon: IconFileText  },
     { link: lastId ? `/home/resume_editor/${lastId}` : "#", label: 'Continue', icon: IconClipboardList, disabled: !lastId },
-    { link: '/home/resumes', label: 'My Resumes', icon: IconClipboardCheckFilled },
+    { link: "/home/completed", label: "Completed Resumes", icon: IconClipboardCheckFilled },
+    { link: '/home/resumes', label: 'My Resumes', icon: IconFolder  },
     { link: '/home/settings', label: 'Settings', icon: IconSettings },
   ] as const;
 

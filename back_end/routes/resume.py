@@ -464,3 +464,33 @@ def reparse_resume(resume_id):
         "message": "Re-parse successful",
         "parse_result": new_parse
     }), 200
+
+# Flip the incomplete to complete
+@resume_bp.route("/resume/<resume_id>/set_complete", methods=["POST"])
+def set_complete(resume_id):
+    if not ObjectId.is_valid(resume_id):
+        return jsonify({"error": "Invalid resume ID"}), 400
+    data = request.get_json() or {}
+    flag = bool(data.get("isComplete", True))
+    result = biography_collection.update_one(
+        {"_id": ObjectId(resume_id)},
+        {"$set": {"isComplete": flag}}
+    )
+    if result.matched_count == 0:
+        return jsonify({"error": "Resume not found"}), 404
+    return jsonify({"message": f"isComplete set to {flag}"}), 200
+
+@resume_bp.route("/resume/resumes", methods=["GET"])
+def list_resumes():
+    status = request.args.get("status")
+    query = {}
+    if status == "complete":
+        query["isComplete"] = True
+    elif status == "incomplete":
+        query["isComplete"] = {"$ne": True}
+    # else no filter = return all
+
+    docs = biography_collection.find(query, {"name": 1})
+    # shape each doc to { _id, name }
+    results = [{"_id": str(d["_id"]), "name": d.get("name")} for d in docs]
+    return jsonify(results), 200
