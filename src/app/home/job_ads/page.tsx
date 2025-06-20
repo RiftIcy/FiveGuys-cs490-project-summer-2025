@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Container, Title, Loader, Text, Table, ScrollArea, Group, Button, Stack, Collapse, Modal } from "@mantine/core";
+import { Container, Title, Loader, Text, Table, ScrollArea, Group, Button, Stack, Collapse, Modal, Tooltip } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useRouter } from "next/navigation";
 
@@ -129,12 +129,25 @@ export default function JobAdsPage() {
                   <Table.Td>{new Date(ad.uploaded_at).toLocaleString()}</Table.Td>
                   <Table.Td>
                     <Group>
+
+                      <Tooltip label={expandedId === ad._id ? "Hide job ad" : "View job ad"}>
                       <Button variant="light" size="xs" onClick={() => toggleExpand(ad._id)}>
                         {expandedId === ad._id ? "Hide" : "Details"}
                       </Button>
+                      </Tooltip>
+
+                      <Tooltip label="Delete this job ad">
                       <Button variant="light" color="red" size="xs" onClick={() => setPendingDeleteId(ad._id)}>
                         Delete
                       </Button>
+                      </Tooltip>
+
+                      <Tooltip label="Select this job ad">
+                        <Button variant="light" size="xs" onClick={() => router.push(`/resume_builder/${ad._id}`)}>
+                          Select
+                        </Button>
+                      </Tooltip>
+
                     </Group>
                   </Table.Td>
                 </Table.Tr>
