@@ -1,0 +1,87 @@
+Software Engineer III - job post
+Bank of America
+3.83.8 out of 5 stars
+101 Hudson Street, Jersey City, NJ 07302
+$102,900 - $180,000 a year - Full-time
+
+Full job description
+
+Job Description:
+
+At Bank of America, we are guided by a common purpose to help make financial lives better through the power of every connection. We do this by driving Responsible Growth and delivering for our clients, teammates, communities and shareholders every day.
+
+Being a Great Place to Work is core to how we drive Responsible Growth. This includes our commitment to being an inclusive workplace, attracting and developing exceptional talent, supporting our teammates’ physical, emotional, and financial wellness, recognizing and rewarding performance, and how we make an impact in the communities we serve.
+
+Bank of America is committed to an in-office culture with specific requirements for office-based attendance and which allows for an appropriate level of flexibility for our teammates and businesses based on role-specific considerations.
+
+At Bank of America, you can build a successful career with opportunities to learn, grow, and make an impact. Join us!
+
+Job Description:
+This job is responsible for developing and delivering complex requirements to accomplish business goals. Key responsibilities of the job include ensuring that software is developed to meet functional, non-functional and compliance requirements, and solutions are well designed with maintainability/ease of integration and testing built-in from the outset. Job expectations include a strong knowledge of development and testing practices common to the industry and design and architectural patterns.
+
+Position Summary :
+
+This position entails to Design and develop complex requirements to accomplish business goals. Ensure that software is developed to meet functional, non-functional, and compliance requirements. Ensure solutions are well designed with maintainability/ease of integration and that testing is built in from the outset. Collaborate with global team of programmers to coordinate delivery of software application. Perform coding and documenting artifacts, including unit test plans. Contribute to story refinement and define requirements. Participate in estimating work necessary to realize a story/requirement through the delivery lifecycle. Perform spike/proof of concept as necessary to mitigate risk or implement new ideas. Design and develop solution architectures to scale backend systems using Python, Web, and rest service specifications. Strong hands on experience in Software frameworks Angular, Sql Alchemy and Open Source components for software development. Design and develop production ready software using web, Cloud, Redis and distributed technologies such as Microservices and utilize CI/CD cloud deployment. Strong hands on experience in Front End technologies such as HTML5, CSS3, SASS, FTL, Handlebars, and new design patterns for website development Strong hands on experience in modern JavaScript frameworks and libraries including React, Angular, jQuery, OO design, and Pattern to develop software applications. Use Test driven development, Agile, Scrum, and SDLC software development methodologies.
+
+Responsibilities:
+
+    Codes solutions and unit test to deliver a requirement/story per the defined acceptance criteria and compliance requirements
+    Designs, develops, and modifies architecture components, application interfaces, and solution enablers while ensuring principal architecture integrity is maintained
+    Mentors other software engineers and coach team on Continuous Integration and Continuous Development (CI-CD) practices and automating tool stack
+    Executes story refinement, definition of requirements, and estimating work necessary to realize a story through the delivery lifecycle
+    Performs spike/proof of concept as necessary to mitigate risk or implement new ideas
+    Automates manual release activities
+    Designs, develops, and maintains automated test suites (integration, regression, performance)
+
+Managerial Responsibilities:
+This position may also have responsibilities for managing associates. At Bank of America, all managers at this level demonstrate the following responsibilities, in addition to those specific to the role, listed above.
+
+    Opportunity & Inclusion Champion: Creates an inclusive team where members are treated fairly and respectfully.
+    Manager of Process & Data: Demonstrates and expects process knowledge, data driven decisions, simplicity and continuous improvement.
+    Enterprise Advocate & Communicator: Delivers clear and concise messages that motivate, convey the “why” and connects contributions to business results.
+    Risk Manager: Leads and encourages the identification, escalation and resolution of potential risks.
+    People Manager & Coach: Knows and develops team members through coaching and feedback.
+    Financial Steward: Manages expenses and demonstrates an owner’s mindset.
+    Enterprise Talent Leader: Recruits, on-boards and develops talent, and supports talent mobility for career growth.
+    Driver of Business Outcomes: Delivers results through effective team management, structure, and routines.
+
+Required Qualifications
+
+        Bachelor’s degree in Computer Science, Computer Information Systems, Management Information Systems, Engineering (any), or job related field required .
+        5 years of progressively responsible experience in the job offered or a related IT occupation.
+        Must include 5 years of experience in each of the following:
+        Designing and developing solution architectures to scale backend systems using , Python, Web, and rest service specifications;
+        Utilizing Software frameworks such as Sql Alchemy, Struts, Spring, Spring MVC, Spring Boot, Groovy, and Open Source components for software development;
+        Designing and developing production ready software using web, Cloud, Redis, Kafka, and distributed technologies such as Microservices and utilizing CI/CD cloud deployment;
+        Utilizing Front End technologies such as HTML5, CSS3, SASS, FTL, Handlebars, and new design patterns for website development;
+        Utilizing Modern JavaScript frameworks and libraries including React, Angular, jQuery, OO design, and Pattern to develop software applications; and,
+        Using Test driven development, Agile, Scrum, and SDLC software development methodologies.
+
+Desired Qualifications:
+
+    Good to have financial industry Experience.
+    Banking industry experience.
+
+Skills:
+
+    Application Development
+    Automation
+    Influence
+    Solution Design
+    Technical Strategy Development
+    Architecture
+    Business Acumen
+    DevOps Practices
+    Result Orientation
+    Solution Delivery Process
+    Analytical Thinking
+    Collaboration
+    Data Management
+    Risk Management
+    Test Engineering
+
+Shift:
+1st shift (United States of America)
+
+Hours Per Week:
+40 

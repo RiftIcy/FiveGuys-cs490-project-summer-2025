@@ -1,0 +1,55 @@
+Software Engineer - job post
+Chubb
+3.73.7 out of 5 stars
+Jersey City, NJ
+$96,300 - $147,700 a year - Full-time
+
+Full job description
+
+As a Software Engineer II in UI Engineering, you will be responsible for designing, developing, and delivering high-quality user interface (UI) re-usable libraries and experiences. You will work on coding, documenting, debugging, testing, and troubleshooting throughout the application development process. You will have the opportunity to work on challenging projects, collaborate with talented colleagues, and shape the future of UI engineering at our company.
+
+In this role, you will be expected to have a strong understanding of software development principles and be able to apply them to create high-quality software. You will work closely with other team members to ensure that our software meets the needs of our users and is delivered on time and within budget.
+Responsibilities:
+Design and Development
+
+    Design and develop reusable Angular UI components using Chubb's design system, Angular, TypeScript, HTML, SCSS, and JavaScript with focus on code reusability and maintainability.
+    Identify and assess technical dependencies and feasibility constraints that impact the development of UI.
+    Ensure seamless user experience across various devices and browsers.
+    Proactively seeks new knowledge and adapts to new trends, technical solutions, and patterns that will improve the reliability, efficiency, and performance of UI component libraries.
+
+Collaboration and Communication
+
+    Work closely with cross-functional teams, including UX/UI designers, and product managers to ensure timely delivery of projects.
+    Communicate technical information to non-technical stakeholders through clear documentation and presentations.
+
+Testing and Debugging
+
+    Write automated unit and integration tests for UI components using Jest/Vitest.
+    Perform manual debugging and troubleshooting to identify and resolve issues.
+
+Code Review
+
+    Define and practice coding standards and best practices.
+    Participate in code reviews to ensure adherence to coding standards and best practices.
+
+
+    Bachelor's or Master's degree in Computer Science or a related field.
+    3+ years of experience in UI engineering, with a strong portfolio showcasing your work.
+    Strong technical skills, including proficiency in HTML, SCSS, JavaScript, and TypeScript.
+    Excellent analytical skills with systematic and structured approach to software design.
+    Excellent communication and collaboration skills, with the ability to work effectively with designers, developers, and stakeholders.
+    Experience working with Angular framework.
+
+Preferred qualifications:
+
+    Experience with agile development methodologies, wireframing, and prototyping.
+    Ability to communicate technical details clearly across organizational boundaries.
+    Knowledge of state management libraries (e.g., Redux, NgRx) and Signal Store.
+    Familiarity with cloud technologies, UI performance & accessibility best practices.
+
+The pay range for the role is $96,300 to $147,700. The specific offer will depend on an applicant’s skills and other factors. This role may also be eligible to participate in a discretionary annual incentive program. Chubb offers a comprehensive benefits package, more details on which can be found on our careers website . The disclosed pay range estimate may be adjusted for the applicable geographic differential for the location in which the position is filled.
+
+Chubb is a world leader in insurance. With operations in 54 countries, Chubb provides commercial and personal property and casualty insurance, personal accident and supplemental health insurance, reinsurance, and life insurance to a diverse group of clients. The company is distinguished by its extensive product and service offerings, broad distribution capabilities, exceptional financial strength, underwriting excellence, superior claims handling expertise and local operations globally.
+
+At Chubb, we are committed to equal employment opportunity and compliance with all laws and regulations pertaining to it. Our policy is to provide employment, training, compensation, promotion, and other conditions or opportunities of employment, without regard to race, color, religious creed, sex, gender, gender identity, gender expression, sexual orientation, marital status, national origin, ancestry, mental and physical disability, medical condition, genetic information, military and veteran status, age, and pregnancy or any other characteristic protected by law. Performance and qualifications are the only basis upon which we hire, assign, promote, compensate, develop and retain employees. Chubb prohibits all unlawful discrimination, harassment and retaliation against any individual who reports discrimination or harassment.
+&nbsp;

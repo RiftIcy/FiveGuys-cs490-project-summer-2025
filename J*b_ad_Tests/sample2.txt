@@ -1,0 +1,93 @@
+Full job description
+
+About Us:
+
+Vama is an innovative chat and payment platform committed to revolutionising communication and transactions. Our team is passionate about creating seamless, secure, and user-friendly experiences for our customers.
+
+Role Overview:
+We are seeking a skilled Senior Backend Developer to join our talented team. As a backend developer at Vama, you will be vital in designing, developing, and maintaining the backend infrastructure that powers our cutting-edge chat and payment platform. If you are a tech enthusiast with a strong background in Go, distributed systems, and cloud infrastructure, we want to hear from you.
+
+Key Responsibilities:
+
+    Collaborate with cross-functional teams to design and implement backend services using Golang and other relevant technologies.
+    Work with databases such as Cassandra and ScyllaDB, ensuring efficient data storage, retrieval, and maintenance.
+    Implement messaging solutions using NATS.io or similar messaging brokers for reliable communication within our messaging app architecture.
+    Utilise in-memory caching systems like Redis to optimise data access.
+    Implement and maintain infrastructure as code using Docker and Terraform.
+    Monitor, troubleshoot, and optimise system performance using Grafana, Loki, and Prometheus.
+    Contribute to the development of scalable and robust cloud-based solutions on GCP, including CloudRun, BigQuery, and Datastore.
+    Write clear and concise API documentation and design APIs that adhere to best practices using OpenAPI Gateway.
+    Collaborate with front-end developers to integrate user-facing elements using server-side logic.
+    Write unit and end-to-end tests to ensure the reliability and stability of developed features.
+    Demonstrate expertise in Unix systems and a comfort level with Bash scripting.
+
+Required Experience:
+
+    8+ years of professional experience as a Backend Developer.
+    3+ years of professional experience in Golang.
+    Solid understanding of databases, tables, indices, and distributed systems.
+    Knowledge of parallelism, locking, synchronisation, and race conditions in software development.
+    Familiarity with caching mechanisms and cache invalidation strategies.
+    Experience in cloud infrastructure, preferably GCP or AWS.
+    Proficiency in Unix systems and comfort in the terminal.
+    Strong commitment to writing comprehensive tests for all developed features.
+    Good understanding of API design principles and best practices.
+
+Helpful Exoerience:
+
+    Previous experience with Cassandra or ScyllaDB and other distributed databases.
+    Familiarity with Docker, Redis, Terraform, and Grafana.
+    Experience with CloudRun, BigQuery, and Datastore.
+    Knowledge of NATS.io or similar messaging brokers.
+    Knowledge of Kubernetes (experience optional but beneficial).
+
+What We Offer:
+
+    Competitive salary and benefits.
+    A collaborative and innovative work environment.
+    Opportunities for professional growth and development.
+
+Job Type: Full-time
+
+Pay: $150,000.00 - $200,000.00 per year
+
+Benefits:
+
+    Dental insurance
+    Health insurance
+    Health savings account
+    Paid time off
+    Vision insurance
+
+Compensation Package:
+
+    Yearly pay
+
+Schedule:
+
+    8 hour shift
+
+Application Question(s):
+
+    Please list the experiences that you have in relation to the above requirements
+    Do all of the above requirements show on your resume?
+    How would you rate your backend development experience from 1 - 10? (10 being the highest)
+    Would you be ok taking a live coding assessment and/or take home coding test if requested?
+
+Experience:
+
+    Back-end development: 8 years (Required)
+    Golang: 3 years (Required)
+    Cloud infrastructure (GCP or AWS): 3 years (Required)
+    Unix Systems: 3 years (Required)
+    APIs: 3 years (Required)
+    Docker, Redis, Terraform, and Grafana: 2 years (Preferred)
+    CloudRun, BigQuery, and Datastore: 2 years (Preferred)
+    NATS.io or similar: 2 years (Preferred)
+    Kubernetes: 2 years (Preferred)
+
+Ability to Commute:
+
+    New York, NY 10013 (Required)
+
+Work Location: In person

@@ -1,0 +1,6 @@
+We are seeking an experienced Front-End Developer to join our growing team. 
+This is a full-time position based in San Francisco. 
+The ideal candidate should have 5+ years of experience with React.js, JavaScript, HTML, and CSS. 
+Responsibilities include building responsive web applications, collaborating with designers, and optimizing performance. 
+Salary range is $120,000 - $150,000 per year. 
+Benefits include health insurance, dental, vision, and 401k.

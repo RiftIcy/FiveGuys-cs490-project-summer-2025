@@ -1,0 +1,69 @@
+JPMorganChase
+3.93.9 out of 5 stars
+Jersey City, NJ
+$114,000 - $155,000 a year - Full-time
+
+Benefits
+Pulled from the full job description
+
+    Tuition reimbursement
+    Health insurance
+    Retirement plan
+
+&nbsp;
+Full job description
+JOB DESCRIPTION
+
+
+We have an exciting and rewarding opportunity for you to take your software engineering career to the next level.
+
+As a Software Engineer III at JPMorgan Chase within the Commercial & Investment Bank, you serve as a seasoned member of an agile team to design and deliver trusted market-leading technology products in a secure, stable, and scalable way. You are responsible for carrying out critical technology solutions across multiple technical areas within various business functions in support of the firm’s business objectives.
+
+The JPMorgan Chase Commercial & Investment Bank is undertaking a strategic, initiative called Client 360 aimed at developing a big data platform and Firmwide solution for Entity Resolution and Relationships. We are seeking an Big Data Software Engineer with skills and experience implementing large-scale, cloud platform processing internal and 3rd party data. This individual will work on groundbreaking work to implement new solutions for Client 360 - Entity Resolution and Relationships and also enhance the existing platform.
+
+Job responsibilities
+
+    Acquire and manage data from primary and secondary data sources
+    Identify, analyze, and interpret trends or patterns in complex data sets
+    Transform existing ETL logic on AWS and Databricks
+    Innovate new ways of managing, transforming and validating data
+    Implement new or enhance services and scripts (in both object-oriented and functional programming)
+    Establish and enforce guidelines to ensure consistency, quality and completeness of data assets
+    Apply quality assurance best practices to all work products
+    Analyze, design and implement business-related solutions and core architectural changes using Agile programming methodologies with a development team
+    Comfortable learning cutting edge technology stacks and applications to greenfield projects
+
+Qualifications
+
+    Proficiency in advanced Python programming, with extensive experience in utilizing libraries such as Pandas and NumPy.
+    Experience in code and infrastructure for Big Data technologies (e.g. Spark, Kafka, Databricks etc.) and implementing complex ETL transformations
+    Experience with AWS services including EC2, EMR, ASG, Lambda, EKS, RDS and others
+    Experience developing APIs leveraging different back-end data stores (RDS, Graph, Dynamo, etc.)
+    Experience in writing efficient SQL queries
+    Strong understanding of linear algebra, statistics, and algorithms.
+    Strong Experience with UNIX shell scripting to automate file preparation and database loads
+    Experience in data quality testing; adept at writing test cases and scripts, presenting and resolving data issues
+    Familiarity with relational database environment (Oracle, SQL Server, etc.) leveraging databases, tables/views, stored procedures, agent jobs, etc.
+    Strong analytical skills with the ability to collect, organize, analyze, and disseminate significant amounts of information with attention to detail and accuracy
+    Strong development discipline and adherence to best practices and standards.
+
+Preferred Skills
+
+    Experience in Data Science, Machine Learning and AI is a plus
+    Financial Services and Commercial banking experience is a plus
+    Familiarity with NoSQL platforms (MongoDB, AWS Open Search) is a plus
+
+ABOUT US
+JPMorganChase, one of the oldest financial institutions, offers innovative financial solutions to millions of consumers, small businesses and many of the world’s most prominent corporate, institutional and government clients under the J.P. Morgan and Chase brands. Our history spans over 200 years and today we are a leader in investment banking, consumer and small business banking, commercial banking, financial transaction processing and asset management.
+
+We offer a competitive total rewards package including base salary determined based on the role, experience, skill set and location. Those in eligible roles may receive commission-based pay and/or discretionary incentive compensation, paid in the form of cash and/or forfeitable equity, awarded in recognition of individual achievements and contributions. We also offer a range of benefits and programs to meet employee needs, based on eligibility. These benefits include comprehensive health care coverage, on-site health and wellness centers, a retirement savings plan, backup childcare, tuition reimbursement, mental health support, financial coaching and more. Additional details about total compensation and benefits will be provided during the hiring process.
+
+We recognize that our people are our strength and the diverse talents they bring to our global workforce are directly linked to our success. We are an equal opportunity employer and place a high value on diversity and inclusion at our company. We do not discriminate on the basis of any protected attribute, including race, religion, color, national origin, gender, sexual orientation, gender identity, gender expression, age, marital or veteran status, pregnancy or disability, or any other basis protected under applicable law. We also make reasonable accommodations for applicants’ and employees’ religious practices and beliefs, as well as mental health or physical disability needs. Visit our FAQs for more information about requesting an accommodation.
+
+JPMorgan Chase & Co. is an Equal Opportunity Employer, including Disability/Veterans
+
+
+
+ABOUT THE TEAM
+
+J.P. Morgan’s Commercial & Investment Bank is a global leader across banking, markets, securities services and payments. Corporations, governments and institutions throughout the world entrust us with their business in more than 100 countries. The Commercial & Investment Bank provides strategic advice, raises capital, manages risk and extends liquidity in markets around the world. 

@@ -1,0 +1,63 @@
+JPMorganChase
+3.93.9 out of 5 stars
+Jersey City, NJ
+$118,750 - $150,000 a year - Full-time
+
+Benefits
+Pulled from the full job description
+
+    Tuition reimbursement
+    Retirement plan
+    Health insurance
+
+&nbsp;
+Full job description
+JOB DESCRIPTION
+
+Be an integral part of an agile team that's constantly pushing the envelope to innovate, build, enhance and deliver top-notch technology products.
+
+As a Software Engineer at JPMorgan Chase within the Corporate Investment Bank you are an integral part of an agile team that works to enhance, build, and deliver trusted market-leading technology products in a secure, stable, and scalable way. As a core technical contributor, you are responsible for conducting critical technology solutions across multiple technical areas within various business functions in support of the firm’s business objectives.
+Job responsibilities:
+
+    Structure software so that it is easy to understand, test and evolve
+    Write unit, component, integration, end-to-end and performance tests
+    Promptly investigate and fix issues and ensure they do not resurface in the future
+    Own and deliver end-to-end, scalable, and secure solutions in the form of reusable front end components, leveraging modern technologies and the best industry practices
+    Contributes to the problem at hand, even when outside their area of specialty
+    Contribute to and be an advocate for high quality technical architecture design
+    Keep an eye on performance, making sure we use the right approach to identify and solve problems
+
+
+Required qualifications, capabilities, and skills:
+
+    Experience building enterprise level applications with React/Typescript
+    Experience with other JavaScript frameworks/libraries
+    Experience working on globally distributed applications with strict consistency requirements
+    Knowledge of modern software architecture patterns
+    Experience with a modern CI/CD platforms such Circle Ci
+    Experience with modern version control platform such as GitHub
+    Ability to see the long term by choosing suitable technologies and approaches based on the end goals
+    High standards. We are looking for people who expect personal performance and team performance to be nothing short of the best
+
+Preferred qualifications
+
+    Experience in Venture Capital/Private Equity
+
+ABOUT US
+JPMorganChase, one of the oldest financial institutions, offers innovative financial solutions to millions of consumers, small businesses and many of the world’s most prominent corporate, institutional and government clients under the J.P. Morgan and Chase brands. Our history spans over 200 years and today we are a leader in investment banking, consumer and small business banking, commercial banking, financial transaction processing and asset management.
+
+We offer a competitive total rewards package including base salary determined based on the role, experience, skill set and location. Those in eligible roles may receive commission-based pay and/or discretionary incentive compensation, paid in the form of cash and/or forfeitable equity, awarded in recognition of individual achievements and contributions. We also offer a range of benefits and programs to meet employee needs, based on eligibility. These benefits include comprehensive health care coverage, on-site health and wellness centers, a retirement savings plan, backup childcare, tuition reimbursement, mental health support, financial coaching and more. Additional details about total compensation and benefits will be provided during the hiring process.
+
+We recognize that our people are our strength and the diverse talents they bring to our global workforce are directly linked to our success. We are an equal opportunity employer and place a high value on diversity and inclusion at our company. We do not discriminate on the basis of any protected attribute, including race, religion, color, national origin, gender, sexual orientation, gender identity, gender expression, age, marital or veteran status, pregnancy or disability, or any other basis protected under applicable law. We also make reasonable accommodations for applicants’ and employees’ religious practices and beliefs, as well as mental health or physical disability needs. Visit our FAQs for more information about requesting an accommodation.
+
+JPMorgan Chase & Co. is an Equal Opportunity Employer, including Disability/Veterans
+
+
+
+ABOUT THE TEAM
+
+The new Digital Private Markets business is leveraging the power of J.P. Morgan to create an integrated suite of transactional and analytics solutions, focused on the private markets.
+
+This innovative multi-disciplinary team of engineers, data scientists, product managers, designers, and securities professionals is building bespoke digital solutions for private market investors, and high-growth companies.
+
+We aim to transform private markets by offering a combination of portfolio management, data, and analytics tools, as well as a suite of primary capital raising tools for companies and funds, and secondary liquidity services.

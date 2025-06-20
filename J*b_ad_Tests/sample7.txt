@@ -1,0 +1,106 @@
+Software Engineer - job post
+Sourgum
+Jersey City, NJ
+$130,000 - $170,000 a year - Full-time
+
+Benefits
+Pulled from the full job description
+
+    Stock options
+    Dental insurance
+    Vision insurance
+    401(k)
+    Health insurance
+    Paid time off
+    Opportunities for advancement
+
+&nbsp;
+Full job description
+
+Sourgum is transforming the $100B+ waste and recycling industry through cutting-edge technology that makes waste removal simpler, smarter, and more cost-effective. Our innovative haulsourcing platform powers high-quality waste and recycling services for businesses at significantly lower costs—saving our customers an average of 20%. Leveraging proprietary datasets, an advanced operating system, and a carefully curated network of 5,000+ trusted vendors, we help companies of all shapes and sizes streamline their operations while advancing sustainability efforts.
+
+We’re a fast-growing, venture-backed company (just closed our Series A!) on a mission to modernize an outdated industry — and we’re just getting started. Our investors include Spark Capital, Founder Collective, Suffolk Technologies, 186 Ventures, and River Park Ventures, the same funds that backed category-defining companies like Slack, Anthropic, Uber, Venmo, and Amazon Pharmacy.
+
+If you’re driven by the opportunity to build something groundbreaking, we’d love to meet you.
+
+As a crucial member of our small but rapidly growing team, you will be responsible for working on our core SaaS platform. Your contributions will be instrumental in developing, maintaining, and delivering this new platform.
+
+The ideal candidate has recent experience writing React UI’s and Node microservices using Postgres.
+Key Responsibilities
+
+    The delivery of design and implementation of digital platform solutions based on business requirements
+
+    Development and maintenance of the software platform. Align the results with the requirements of the appropriate stakeholders
+
+    Work with the product managers, business unit leaders, and stakeholders to manage engineering and determine team resourcing.
+
+    Translating business requirements to technical requirements for engineering to design and implement software solutions.
+
+Requirements
+
+The following are representative of the education, experience, knowledge, skills or
+Ability required for this position.
+
+    3+ years of professional experience building with Typescript/React/Node or Go
+
+    3+ years of experience working with relational databases (MySQL, PostgreSQL, etc.)
+
+    Hands-on experience building in a microservices architecture
+
+    Strong understanding of data structures, indexing, and searching required
+
+    Ability to integrate with Elasticsearch and run queries/reports
+
+    Hands-on experience working with AWS-based services including S3, SQS, SNS, DynamoDB, Lambda, Redshift
+
+    Can apply principles of Test-Driven Development
+
+    Experience with writing test cases
+
+    Able to write build scripts
+
+    Experience with version control systems, CI/CD pipeline tools, workflow tools, Jenkins, etc.
+
+    Experience integrating applications with Redis/Memcached a plus
+
+    AI/Machine Learning experience a plus
+
+Nice to Have Skills
+
+    Experience with Flutter
+
+    Development of mobile and tablet devices
+
+    Experience with Kubernetes and Terraform
+
+    Experience with Kafka and similar technologies
+
+    Experience with BigQuery and Metabase
+
+    Experience developing Vertical SaaS ERP Software
+
+Personal Skills
+
+    A passion for building software and streamlining process issues
+
+    Demonstrate tenacity when solving challenging problems in a deadline-driven environment
+
+    Experience with Scrum/Agile Methodologies
+
+    Ability to work in a team environment and mentor others
+
+    Able to be self-motivated and work independently as needed to solve complex problems
+
+    Taking pride in work and desire to make projects succeed
+
+Benefits
+
+    Company stock options are part of your compensation package, giving you the opportunity to share in our company's success and build long-term financial growth.
+
+    A positive and collaborative work environment with a focus on innovation and sustainability.
+
+    Comprehensive benefits package including health insurance (medical, dental, vision), retirement plans (401K), and generous paid time off.
+
+    Opportunities for professional development and career advancement within a growing company.
+
+Compensation Range: $130K - $170K
