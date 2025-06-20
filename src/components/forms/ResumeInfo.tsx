@@ -54,7 +54,6 @@ import {
 } from "@dnd-kit/sortable";
 import SortableJobCard from "@/components/ui/SortableJobCard";
 import SortableEducationCard from "@/components/ui/SortableEducationCard";
-import { removeFromCache } from "@/lib/resumeCache";
 import { CSS } from "@dnd-kit/utilities";
 
 interface ResumeInfoProps {
@@ -341,13 +340,6 @@ function SortableCategory({
 }
 
 export default function ResumeInfo({ data }: ResumeInfoProps) {
-  // Create a local cache to save currently working on Draft
-  useEffect(() => {
-    if (data._id) {
-      localStorage.setItem("lastResumeId", data._id);
-    }
-  }, [data._id]);
-
   //Flag to decide if a resume is complete
   const [savingContinue, setSavingContinue] = useState(false);
 
@@ -1521,8 +1513,9 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
     return null;
   }
 
+  const [savingAll, setSavingAll] = useState(false);
   async function handleSaveAll() {
-    // 1) Check validation errors in each section
+    // 1) Front End Validations
     if (emailErrors.some(Boolean)) {
       return notifications.show({
         title: "Cannot save",
@@ -1590,24 +1583,33 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
         });
       }
     }
-    // If no errors save everything
+    // Sequintal Saves
+    setSavingAll(true);
     try {
-      await Promise.all([
-        saveEmails(),
-        savePhones(),
-        saveCareerObjective(),
-        saveSkills(),
-      ]);
+      await saveEmails();
+      if (emailErrors.some(Boolean)) throw new Error("Emails still invalid");
 
-      // Save each job entry
+      await savePhones();
+      if (phoneErrors.some(Boolean)) throw new Error("Phones still invalid");
+
+      await saveCareerObjective();
+      if (objectiveError) throw new Error("Objective still invalid");
+
+      await saveSkills();
+      if (skillSaveValidationMessage) throw new Error(skillSaveValidationMessage);
+
+      // Jobs
       for (let i = 0; i < jobsState.length; i++) {
         const err = validateJobEntry(jobsState[i]);
+        if (err) throw new Error(`Job ${i + 1}: ${err}`);
         await saveJob(i);
       }
       await saveJobOrder(jobsState);
 
-      // Save each education entry
+      // Education
       for (let i = 0; i < edusState.length; i++) {
+        const err = validateEduEntry(edusState[i]);
+        if (err) throw new Error(`Education ${i + 1}: ${err}`);
         await saveEdu(i);
       }
       await saveEduOrder(edusState);
@@ -1618,7 +1620,8 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
         color: "teal",
       });
       setHasSavedAll(true);
-    } catch (err) {
+    } 
+    catch (err) {
       // in case any of the saves threw
       notifications.show({
         title: "Error",
@@ -1626,26 +1629,68 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
         color: "red",
       });
     }
+    finally {
+      setSavingAll(false);
+    }
   }
 
   function hasMissingRequiredForms() {
-    // Emails and phones must each have at least one
-    if (emails.length === 0 || phones.length === 0) return true;
-    // Objective must be non-empty
-    if (!objective.trim()) return true;
-    // Skills — at least one category with > 0 skills
-    if (skillSaveValidationMessage) return true;
-    // No jobs or educations should be mid-edit
-    if (editingIndex !== null || editingEduIndex !== null) return true;
-    // All saved job rows must validate
-    if (jobsState.some((j) => validateJobEntry(j) !== null)) return true;
-    // All saved education rows must validate
-    if (edusState.some((e) => validateEduEntry(e) !== null)) return true;
+    // 1) Emails: at least one non‐empty, all valid
+    if (
+      emails.length === 0 ||
+      emails.some((e) => !e.trim() || !emailRegex.test(e.trim()))
+    ) {
+      return true;
+    }
 
-    return false
+    // 2) Phones: at least one non‐empty, all valid
+    if (
+      phones.length === 0 ||
+      phones.some((p) => {
+        const digits = p.replace(/\D/g, "");
+        return digits.length !== 10;
+      })
+    ) {
+      return true;
+    }
+
+    // 3) Objective: non‐empty and no error
+    if (!objective.trim() || Boolean(objectiveError)) {
+      return true;
+    }
+
+    // 4) Skills: reuse your existing message
+    if (Boolean(skillSaveValidationMessage)) {
+      return true;
+    }
+
+    // 5) No mid‐edit forms
+    if (editingIndex !== null || editingEduIndex !== null) {
+      return true;
+    }
+
+    // 6) Jobs: every saved row must validate
+    for (let i = 0; i < jobsState.length; i++) {
+      if (validateJobEntry(jobsState[i]) !== null) {
+        return true;
+      }
+    }
+
+    // 7) Education: every saved row must validate
+    for (let i = 0; i < edusState.length; i++) {
+      if (validateEduEntry(edusState[i]) !== null) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
-  const canContinue = hasSavedAll && !hasMissingRequiredForms();
+  function allSectionsSaved() {
+    return !Object.values(dirty).some(Boolean);
+  }
+
+  const canContinue = allSectionsSaved() && !hasMissingRequiredForms();
 
   // Define the continue handler:
   async function handleContinue() {
@@ -1656,7 +1701,6 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isComplete: true }),
       });
-      removeFromCache(data._id!); 
       router.push("/home/completed_forms");
     } catch (err) {
       notifications.show({
@@ -3145,13 +3189,15 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
         </Tabs.Panel>
       </Tabs>
       <Group mt="md">
-        <Button
-          onClick={handleContinue}
-          disabled={!canContinue}
-          loading={savingContinue}
-        >
-          Complete Resume
-        </Button>
+        <Tooltip label="Once All data is in the correct format you can press continue">
+          <Button
+            onClick={handleContinue}
+            disabled={!canContinue}
+            loading={savingContinue}
+          >
+            Complete Resume
+          </Button>
+        </Tooltip>
       </Group>
     </Container>
   );

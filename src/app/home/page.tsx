@@ -5,25 +5,16 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {Container, Grid, SimpleGrid, Skeleton, Card, Image, Text, Button, Group, Badge,} from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { listCachedResumes } from "@/lib/resumeCache";
 
 export default function HomePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [lastId, setLastId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
       router.push("/"); // Redirect to landing page if not authenticated
     }
   }, [user, loading, router]);
-
-  useEffect(() => {
-    const cached = listCachedResumes();
-    if (cached.length > 0) {
-      setLastId(cached[0].id);
-    }
-  }, []);
 
   if (loading) {
     return <p>Loading...</p>; // Show a loading state while checking auth
@@ -52,7 +43,7 @@ export default function HomePage() {
         <Grid gutter="md">
           <Grid.Col>
             {/* Continue Editing */}
-            <Card shadow="sm" padding="lg" radius="md" withBorder onClick={() => lastId ? router.push(`/home/resume_editor/${lastId}`) : notifications.show({ title: "No recent resume", message: "You haven't uploaded any resumes yet.", color: "gray",})} style={{cursor:"pointer", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between"}}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder onClick={() => router.push("/home/drafts")} style={{cursor:"pointer", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between"}}>
               <Card.Section>
                 <Image
                   src="https://img.freepik.com/premium-vector/resume-concept-man-makes-resume-vector-illustration-flat_186332-1030.jpg?w=996" // Find image for Resume Builder
@@ -71,7 +62,7 @@ export default function HomePage() {
 
           <Grid.Col span={6}>
             {/* Completed Resumes */}
-            <Card shadow="sm" padding="lg" radius="md" withBorder onClick={() => router.push("/home/resumes")} style={{cursor:"pointer", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between"}}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder onClick={() => router.push("/home/completed_resumes")} style={{cursor:"pointer", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between"}}>
               <Card.Section>
                 <Image
                   src="https://static.vecteezy.com/system/resources/thumbnails/021/453/345/original/4k-stand-out-resume-or-cv-animation-young-smart-businessman-holding-his-resume-or-cv-printed-paper-present-his-working-profile-for-hiring-free-video.jpg" // Find image for Resume Builder

@@ -70,6 +70,31 @@ export default function CompletedFormPage() {
     }
   };
 
+  // When the user presses edit make the from incomplete again
+  const handleEdit = async (res: ResumeSummary) => {
+    try {
+      const response = await fetch(
+        `http://localhost:5000/resume/${res._id}/set_complete`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isComplete: false }),
+        }
+      );
+      if (!response.ok) {
+        const { error } = await response.json();
+        throw new Error(error || response.statusText);
+      }
+      router.push(`/home/resume_editor/${res._id}`);
+    } catch (err) {
+      notifications.show({
+        title: 'Unable to Edit',
+        message: String(err),
+        color: 'red',
+      });
+    }
+  };
+
   if (loading) return <Container><Loader /></Container>;
   if (error) return <Container><Text c="red">Error: {error}</Text></Container>;
 
@@ -87,7 +112,7 @@ export default function CompletedFormPage() {
                 </Button>
               </Tooltip>
               <Tooltip label="Edit Changes">
-                <Button variant='light' color='yellow'>
+                <Button variant='light' color='yellow' onClick={() => handleEdit(r)}>
                   Edit
                 </Button>
               </Tooltip>

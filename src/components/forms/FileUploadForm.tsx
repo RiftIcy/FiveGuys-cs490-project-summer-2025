@@ -5,7 +5,6 @@ import { Container, Paper, Title, TextInput, Textarea, Group, Button, Stack, Loa
 import { notifications } from '@mantine/notifications';
 import { IconCheck, IconX, IconUpload } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
-import { addToCache } from "@/lib/resumeCache";
 
 export default function FileUploadForm() {
     const router = useRouter();
@@ -82,13 +81,6 @@ export default function FileUploadForm() {
                 icon: <IconCheck size={18} />,
                 autoClose: 1000,
                 onClose: () => {
-                    // 1) add to LRU cache
-                    addToCache({
-                        id: data.id,
-                        name: resumeName.trim(),
-                        timestamp: Date.now(),
-                    });
-                    // 2) navigate
                     router.push(`/home/resume_editor/${data.id}`);
                 },
             });

@@ -1,108 +1,51 @@
-// pages/home/resumes/index.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { listCachedResumes, removeFromCache  } from "@/lib/resumeCache";
-import { Container, SimpleGrid, Card, Title, Text, Button, Group, ActionIcon, Modal, Stack } from "@mantine/core";
-import { IconTrash, IconTrashOff } from "@tabler/icons-react";
+import { Container, Title, Stack, Card, Text, Button, Group, Loader } from "@mantine/core";
 
-interface Resume {
-  id: string;
+interface ResumeSummary {
+  _id: string;
   name: string;
-  timestamp: number;
 }
 
-export default function MyResumesPage() {
+export default function DraftsPage() {
   const router = useRouter();
-  const [resumes, setResumes] = useState<Resume[]>([]);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [confirmOpened, setConfirmOpened] = useState(false);
+  const [drafts, setDrafts] = useState<ResumeSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // load cache
   useEffect(() => {
-    setResumes(listCachedResumes());
+    fetch("http://localhost:5000/resume/resumes?status=incomplete")
+      .then((res) => {
+        if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+        return res.json();
+      })
+      .then(setDrafts)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
   }, []);
 
-  // Opens the confirm delete button
-  const openConfirm = (id: string) => {
-    setDeletingId(id);
-    setConfirmOpened(true);
-  };
+  if (loading) return <Container><Loader /></Container>;
+  if (error)   return <Container><Text color="red">{error}</Text></Container>;
 
-  // Confirms the deletion
-  const confirmDelete = () => {
-    if (deletingId) {
-      removeFromCache(deletingId);
-      setResumes(listCachedResumes());
-    }
-    setConfirmOpened(false);
-    setDeletingId(null);
-  };
-
-return (
-    <Container my="md">
-      <Title order={2} mb="lg">
-        My Resumes
-      </Title>
-
-      <SimpleGrid cols={2} spacing="md">
-        {resumes.length === 0 && (
-          <Card shadow="sm" withBorder>
-            <Text>No saved resumes yet.</Text>
-          </Card>
-        )}
-
-        {resumes.map((r) => (
-          <Card key={r.id} shadow="sm" withBorder>
-            <Group mb="xs">
-              <Stack>
-                <Text>{r.name}</Text>
-                <Text size="xs">
-                  {new Date(r.timestamp).toLocaleDateString()}
-                </Text>
-              </Stack>
-
-              <ActionIcon
-                color="red"
-                variant="light"
-                onClick={() => openConfirm(r.id)}
-                title="Delete resume"
-              >
-                <IconTrash size={18} />
-              </ActionIcon>
+  return (
+    <Container>
+      <Title order={2} mb="md">My Drafts</Title>
+      <Stack>
+        {drafts.length > 0 ? drafts.map((d) => (
+          <Card key={d._id} shadow="sm" padding="lg">
+            <Group>
+              <Text>{d.name}</Text>
+              <Button onClick={() => router.push(`/home/resume_editor/${d._id}`)}>
+                Continue Editing
+              </Button>
             </Group>
-
-            <Button
-              fullWidth
-              onClick={() => router.push(`/home/resume_editor/${r.id}`)}
-            >
-              Open
-            </Button>
           </Card>
-        ))}
-      </SimpleGrid>
-
-      <Modal
-        opened={confirmOpened}
-        onClose={() => setConfirmOpened(false)}
-        title="Delete resume?"
-        centered
-      >
-        <Text>
-          Are you sure you want to permanently delete this resume from your
-          cache? This action cannot be undone.
-        </Text>
-        <Group mt="md">
-          <Button variant="default" onClick={() => setConfirmOpened(false)}>
-            Cancel
-          </Button>
-          <Button color="red" onClick={confirmDelete}>
-            <IconTrashOff style={{ marginRight: 4 }} />
-            Delete
-          </Button>
-        </Group>
-      </Modal>
+        )) : (
+          <Text>No drafts found.</Text>
+        )}
+      </Stack>
     </Container>
   );
 }
