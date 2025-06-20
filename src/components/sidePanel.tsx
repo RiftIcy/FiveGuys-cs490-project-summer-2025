@@ -27,6 +27,7 @@ import {
   IconSettings,
   IconSwitchHorizontal,
   IconBriefcase,
+  IconSpeakerphone 
 } from '@tabler/icons-react';
 import { Code, Group } from '@mantine/core';
 import { MantineLogo } from '@mantinex/mantine-logo';
@@ -56,6 +57,7 @@ export default function SidePanel({ hidden }: SidePanelProps) {
     { link: '/home/drafts', label: 'My Drafts', icon: IconFolder  },
     { link: "/home/completed_forms", label: "Completed Forms", icon: IconFileCheck },
     {link: "/home/job_posting", label: "Job Posting", icon: IconBriefcase},
+    {link: "/home/job_ads", label: "Job Ads", icon: IconSpeakerphone},
     { link: "/home/completed_resumes", label: "Completed Resumes", icon: IconClipboardCheckFilled },
     { link: '/home/settings', label: 'Settings', icon: IconSettings },
   ] as const;

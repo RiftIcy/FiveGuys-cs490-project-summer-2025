@@ -106,11 +106,6 @@ export default function CompletedFormPage() {
           <Card key={r._id} shadow="sm" withBorder>
             <Group>
               <Text>{r.name}</Text>
-              <Tooltip label="View your submitted form">
-                <Button variant="light" onClick={() => router.push(`/resume/${r._id}`)}>
-                  View
-                </Button>
-              </Tooltip>
               <Tooltip label="Edit Changes">
                 <Button variant='light' color='yellow' onClick={() => handleEdit(r)}>
                   Edit

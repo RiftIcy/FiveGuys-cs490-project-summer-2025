@@ -82,3 +82,17 @@ def list_job_ads():
 
     except Exception as e:
         return jsonify({"error": f"Database error: {str(e)}"}), 500
+    
+@job_ads_bp.route("/job_ads/<id>", methods=["DELETE"])
+def delete_job_ad(id):
+    # validate ObjectId
+    try:
+        oid = ObjectId(id)
+    except Exception as e:
+        return jsonify({"error": f"Invalid ID format: {str(e)}"}), 400
+
+    result = job_ads_collection.delete_one({"_id": oid})
+    if result.deleted_count == 0:
+        return jsonify({"error": "Job ad not found"}), 404
+
+    return jsonify({"message": "Job ad deleted"}), 200

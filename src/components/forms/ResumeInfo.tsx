@@ -56,7 +56,7 @@ import SortableJobCard from "@/components/ui/SortableJobCard";
 import SortableEducationCard from "@/components/ui/SortableEducationCard";
 import { CSS } from "@dnd-kit/utilities";
 
-interface ResumeInfoProps {
+export interface ResumeInfoProps {
   data: {
     _id?: string;
     name?: string | null;

@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Container, Title, Loader, Text, Table, ScrollArea, Group, Button, Stack, Collapse} from "@mantine/core";
+import { Container, Title, Loader, Text, Table, ScrollArea, Group, Button, Stack, Collapse, Modal } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { useRouter } from "next/navigation";
 
 interface JobAd {
@@ -27,6 +28,8 @@ export default function JobAdsPage() {
     const [ads, setAds] = useState<JobAd[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false)
     const router = useRouter();
 
     useEffect(() => {
@@ -41,6 +44,31 @@ export default function JobAdsPage() {
             console.error("Failed to load job ads:", err);
         }).finally(() => setLoading(false));
     }, []);
+
+    const handleDelete = async (id: string) => {
+      const notifId = "delete-job";
+      setIsDeleting(true);
+      notifications.show({id: notifId, loading: true, title: "Deleting job ad", message: "Please wait…", autoClose: false, withCloseButton: false});
+
+      try {
+        const response = await fetch(`http://localhost:5000/job_ads/${id}`, {
+          method: "DELETE",
+        });
+        if (!response.ok) throw new Error(await response.text());
+
+        // Remove the job from UI
+        setAds(prev => prev.filter(ad => ad._id !== id));
+        if (expandedId === id) setExpandedId(null);
+
+        notifications.update({id: notifId, loading: false, title: "Deleted", message: "Job ad has been deleted.", color: "teal", autoClose: 2000});
+      }
+      catch(err: any) {
+        notifications.update({id: notifId, loading: false, title: "Failed to delete", message: err.message ?? String(err), color: "red", autoClose: 3000});
+      }
+      finally {
+        setIsDeleting(false);
+      }
+    };
 
     const toggleExpand = (id: string) => {
         setExpandedId((prev) => (prev === id ? null : id));
@@ -63,6 +91,23 @@ export default function JobAdsPage() {
 
     return (
     <Container size="lg" py="xl">
+
+      <Modal opened={!!pendingDeleteId} onClose={() => setPendingDeleteId(null)} title="Confirm deletion" centered>
+        <Text>Are you sure you want to delete this job ad?</Text>
+        <Group mt="md">
+          <Button variant="default" onClick={() => setPendingDeleteId(null)}>
+            Cancel
+          </Button>
+          <Button color="red"  loading={isDeleting} onClick={async () => {
+            if (!pendingDeleteId) return;
+            await handleDelete(pendingDeleteId);
+             setPendingDeleteId(null);
+          }}>
+            Delete
+          </Button>
+        </Group>
+      </Modal>
+
       <ScrollArea>
         <Table verticalSpacing="sm" withTableBorder>
           <Table.Thead>
@@ -83,9 +128,14 @@ export default function JobAdsPage() {
                   <Table.Td>{ad.parse_result.location}</Table.Td>
                   <Table.Td>{new Date(ad.uploaded_at).toLocaleString()}</Table.Td>
                   <Table.Td>
-                    <Button variant="light" size="xs" onClick={() => toggleExpand(ad._id)}>
-                      {expandedId === ad._id ? "Hide" : "Details"}
-                    </Button>
+                    <Group>
+                      <Button variant="light" size="xs" onClick={() => toggleExpand(ad._id)}>
+                        {expandedId === ad._id ? "Hide" : "Details"}
+                      </Button>
+                      <Button variant="light" color="red" size="xs" onClick={() => setPendingDeleteId(ad._id)}>
+                        Delete
+                      </Button>
+                    </Group>
                   </Table.Td>
                 </Table.Tr>
                 <Table.Tr>
