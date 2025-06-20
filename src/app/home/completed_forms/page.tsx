@@ -121,17 +121,21 @@ export default function CompletedFormPage() {
                   Remove
                 </Button>
               </Tooltip>
-              <Tooltip label="Continue to the Resume Creation">
-                <Button variant='white' color='gray'>
-                  Select
-                </Button>
-              </Tooltip>
             </Group>
           </Card>
         ))}
         {resumes.length === 0 && <Text>No completed resumes found.</Text>}
       </Stack>
+      
 
+      <Group mt="md">
+        <Tooltip label="Continue to the Job Posting">
+          <Button variant='white' color='gray' onClick={() => router.push("/home/job_posting")}>
+            Continue
+          </Button>
+        </Tooltip>
+      </Group>
+      
       {/* Delete Confirmation Modal */}
       <Modal opened={toDelete !== null} onClose={closeDeleteModal} title="Delete Resume?" centered>
         <Text mb="md">
