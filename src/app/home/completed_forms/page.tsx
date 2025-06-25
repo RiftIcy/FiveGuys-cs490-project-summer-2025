@@ -101,21 +101,27 @@ export default function CompletedFormPage() {
   return (
     <Container size="lg" py="md">
       <Title order={2} mb="md">Completed Forms</Title>
+
       <Stack>
         {resumes.map((r) => (
           <Card key={r._id} shadow="sm" withBorder>
-            <Group>
-              <Text>{r.name}</Text>
-              <Tooltip label="Edit Changes">
-                <Button variant='light' color='yellow' onClick={() => handleEdit(r)}>
-                  Edit
-                </Button>
-              </Tooltip>
-              <Tooltip label="Delete form">
-                <Button variant='light' color='red' onClick={() => openDeleteModal(r)}>
-                  Remove
-                </Button>
-              </Tooltip>
+            <Group justify="space-between">
+                <Text>{r.name}</Text>
+                
+              <Group>
+                <Tooltip label="Edit Changes">
+                  <Button variant='light' color='yellow' onClick={() => handleEdit(r)}>
+                    Edit
+                  </Button>
+                </Tooltip>
+
+                <Tooltip label="Delete form">
+                  <Button variant='light' color='red' onClick={() => openDeleteModal(r)}>
+                    Remove
+                  </Button>
+                </Tooltip>
+              </Group>
+
             </Group>
           </Card>
         ))}

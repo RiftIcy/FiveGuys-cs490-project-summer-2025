@@ -32,7 +32,7 @@ import {
 import { Code, Group } from '@mantine/core';
 import { MantineLogo } from '@mantinex/mantine-logo';
 import classes from '@/styles/sidePanel.module.css';
-import { ClipboardCheckIcon } from 'lucide-react';
+import { ClipboardCheckIcon, UploadIcon } from 'lucide-react';
 
 interface SidePanelProps {
   hidden?: boolean;
@@ -54,6 +54,7 @@ export default function SidePanel({ hidden }: SidePanelProps) {
   const menuItems: MenuItem[] = [
     { link: '/home/', label: 'Main', icon: IconHome },
     { link: '/home/resume_builder', label: 'Start New', icon: IconFileText  },
+    { link: '/home/database', label: 'My Collection', icon: IconDatabaseImport },
     { link: '/home/drafts', label: 'My Drafts', icon: IconFolder  },
     { link: "/home/completed_forms", label: "Completed Forms", icon: IconFileCheck },
     {link: "/home/job_posting", label: "Job Posting", icon: IconBriefcase},

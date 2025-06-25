@@ -483,7 +483,7 @@ def set_complete(resume_id):
 @resume_bp.route("/resume/resumes", methods=["GET"])
 def list_resumes():
     status = request.args.get("status")
-    query = {}
+    query = {"name": {"$exists": True, "$nin": ["", None]}, "isComplete": {"$ne": True}}
     if status == "complete":
         query["isComplete"] = True
     elif status == "incomplete":
