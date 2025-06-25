@@ -45,3 +45,9 @@ next-env.d.ts
 *Zone.Identifier
 
 serviceAccountKey.json
+
+# Ignore compiled Python files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
