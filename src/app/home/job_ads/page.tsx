@@ -143,7 +143,7 @@ export default function JobAdsPage() {
                       </Tooltip>
 
                       <Tooltip label="Select this job ad">
-                        <Button variant="light" size="xs" onClick={() => router.push(`/resume_builder/${ad._id}`)}>
+                        <Button variant="light" size="xs" onClick={() => router.push(`/home/job_ads/${ad._id}`)}>
                           Select
                         </Button>
                       </Tooltip>
