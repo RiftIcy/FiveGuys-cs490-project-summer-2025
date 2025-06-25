@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { Container, Paper, Title, TextInput, Textarea, Group, Button, Stack, Loader } from '@mantine/core';
+import { Container, Paper, Title, TextInput, Textarea, Group, Button, Stack, Loader, Tooltip } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconCheck, IconX, IconUpload } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
@@ -9,11 +9,8 @@ import { useRouter } from 'next/navigation';
 export default function FileUploadForm() {
     const router = useRouter();
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [resumeName, setResumeName] = useState("");
     const [biographyText, setBiographyText] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [feedbackMessageID, setFeedbackMessageID] = useState("");
-    const [isError, setIsError] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,14 +28,6 @@ export default function FileUploadForm() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // If no name for resume
-        if (!resumeName.trim()) {
-            return notifications.show({
-                title: "Name required",
-                message: "Please enter a name for your resume.",
-                color: "red",
-            });
-        }
         // If there is no input
         if (!selectedFile && !biographyText.trim()) {
             return notifications.show({
@@ -51,14 +40,13 @@ export default function FileUploadForm() {
         const notifId = notifications.show({
             loading: true,
             title: "Uploading…",
-            message: "Uploading resume and sending to LLM, please wait…",
+            message: "Storing your file or text input…",
             autoClose: false,
             withCloseButton: false
         });
         setIsSubmitting(true);
 
         const formData = new FormData();
-        formData.append("name", resumeName.trim());
         if (selectedFile) formData.append("file", selectedFile);
         if (biographyText.trim()) formData.append("biography", biographyText.trim());
 
@@ -79,11 +67,13 @@ export default function FileUploadForm() {
                 message: data.message,
                 color: "teal",
                 icon: <IconCheck size={18} />,
-                autoClose: 1000,
-                onClose: () => {
-                    router.push(`/home/resume_editor/${data.id}`);
-                },
+                autoClose: 2000,
+                withCloseButton: true,
             });
+
+            // Reset Inputs
+            setSelectedFile(null);
+            setBiographyText("");
         }
         catch(error: any) {
             notifications.update({
@@ -107,15 +97,7 @@ export default function FileUploadForm() {
             <Paper shadow="sm" p="lg" radius="md">
                 <form onSubmit={handleSubmit}>
                     <Stack>
-                        <Title order={3}>New Resume</Title>
-
-                        <TextInput
-                            label="Resume Name"
-                            placeholder="e.g. Senior Backend Engineer CV"
-                            withAsterisk
-                            value={resumeName}
-                            onChange={(e) => setResumeName(e.currentTarget.value)}
-                        />
+                        <Title order={3}>Upload Resume or Biography</Title>
                         <Group align="center">
                             <TextInput
                                 readOnly
@@ -129,7 +111,7 @@ export default function FileUploadForm() {
                         </Group>
 
                         <Textarea
-                            label="Or paste your biography text"
+                            label="Paste your biography text here"
                             minRows={5}
                             value={biographyText}
                             onChange={(e) => {
@@ -139,9 +121,16 @@ export default function FileUploadForm() {
                         />
 
                         <Group mt="md">
+
                             <Button type="submit" leftSection={isSubmitting ? <Loader size="xs" /> : <IconUpload size={18} />} loading={isSubmitting} disabled={isSubmitting}>
                             Upload
                             </Button>
+
+                            <Tooltip label="Continue to view all uploaded files">
+                                <Button variant="outline" onClick={() => router.push("/home/database")}>
+                                    Continue
+                                </Button>
+                            </Tooltip>
                         </Group>
                     </Stack>
                 </form>
