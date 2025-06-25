@@ -115,7 +115,7 @@ export default function JobAdsPage() {
               <Table.Th>Title</Table.Th>
               <Table.Th>Company</Table.Th>
               <Table.Th>Location</Table.Th>
-              <Table.Th>Uploaded At</Table.Th>
+              <Table.Th>Uploaded</Table.Th>
               <Table.Th></Table.Th>
             </Table.Tr>
           </Table.Thead>
