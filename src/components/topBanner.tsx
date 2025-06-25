@@ -38,6 +38,11 @@ export default function TopBanner({ toggleSidePanel }: TopBannerProps) {
     "/home": "Home",
     "/home/settings": "Settings",
     "/home/resume_builder": "Upload",
+    "/home/database": "Collection",
+    "/home/drafts": "Drafts",
+    "/home/completed_forms": "Completed Forms",
+    "/home/job_posting": "Job Posting",
+    "/home/job_ads": "Job Ads",
   };
 
   const pageTitle =
