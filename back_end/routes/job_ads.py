@@ -1,9 +1,11 @@
 from flask import Blueprint, jsonify, request
 from .auth_utils import require_firebase_auth
-from db import job_ads_collection, biography_collection, completed_resumes_collection
+from db import job_ads_collection, biography_collection, completed_resumes_collection, resume_generation_jobs_collection
 from bson import ObjectId
 from parser.parser import JobAdParser, ResumeTailoringParser
 from datetime import datetime
+import threading
+import time
 
 job_ads_bp = Blueprint("job_ads", __name__)
 
@@ -110,52 +112,69 @@ def delete_job_ad(id):
     return jsonify({"message": "Job ad deleted"}), 200
 
 
-@job_ads_bp.route("/job_ads/<job_ad_id>/create_tailored_resume", methods=["POST"])
-@require_firebase_auth
-def create_tailored_resume(job_ad_id):
+def process_resume_generation_background(job_id, user_id, job_ad_id, resume_ids):
     """
-    Create ONE tailored resume by combining all selected completed resumes.
+    Background function to process resume generation.
+    This simulates a longer-running process.
     """
     try:
-        # Validate job ad ID
-        if not ObjectId.is_valid(job_ad_id):
-            return jsonify({"error": "Invalid job ad ID"}), 400
+        # Update status to processing
+        resume_generation_jobs_collection.update_one(
+            {"_id": ObjectId(job_id)},
+            {"$set": {"status": "processing", "progress": 10}}
+        )
         
-        # Get request data
-        data = request.get_json()
-        if not data or "resume_ids" not in data:
-            return jsonify({"error": "Missing 'resume_ids' in request body"}), 400
-        
-        resume_ids = data["resume_ids"]
-        if not isinstance(resume_ids, list) or len(resume_ids) == 0:
-            return jsonify({"error": "resume_ids must be a non-empty list"}), 400
-        
-        # Validate all resume IDs
-        for resume_id in resume_ids:
-            if not ObjectId.is_valid(resume_id):
-                return jsonify({"error": f"Invalid resume ID: {resume_id}"}), 400
+        # Simulate some processing time
+        time.sleep(2)
         
         # Fetch the job ad
         job_ad_doc = job_ads_collection.find_one({
             "_id": ObjectId(job_ad_id),
-            "user_id": request.user_id
+            "user_id": user_id
         })
         if not job_ad_doc:
-            return jsonify({"error": "Job ad not found"}), 404
+            resume_generation_jobs_collection.update_one(
+                {"_id": ObjectId(job_id)},
+                {"$set": {"status": "failed", "error": "Job ad not found"}}
+            )
+            return
         
         job_ad_data = job_ad_doc.get("parse_result")
         if not job_ad_data:
-            return jsonify({"error": "Job ad has no parsed data"}), 400
+            resume_generation_jobs_collection.update_one(
+                {"_id": ObjectId(job_id)},
+                {"$set": {"status": "failed", "error": "Job ad has no parsed data"}}
+            )
+            return
+        
+        # Update progress
+        resume_generation_jobs_collection.update_one(
+            {"_id": ObjectId(job_id)},
+            {"$set": {"progress": 30}}
+        )
         
         # Fetch the selected resumes
         resume_docs = list(biography_collection.find({
             "_id": {"$in": [ObjectId(rid) for rid in resume_ids]},
-            "user_id": request.user_id,
-            "isComplete": True  # Only allow completed resumes
+            "user_id": user_id,
+            "isComplete": True
         }))
         
         if len(resume_docs) != len(resume_ids):
-            return jsonify({"error": "Some resumes not found or not completed"}), 404
+            resume_generation_jobs_collection.update_one(
+                {"_id": ObjectId(job_id)},
+                {"$set": {"status": "failed", "error": "Some resumes not found or not completed"}}
+            )
+            return
+        
+        # Update progress
+        resume_generation_jobs_collection.update_one(
+            {"_id": ObjectId(job_id)},
+            {"$set": {"progress": 50}}
+        )
+        
+        # Simulate processing time for combining resumes
+        time.sleep(1)
         
         # Step 1: Combine all resume data into one master resume
         combined_resume_data = {
@@ -219,36 +238,190 @@ def create_tailored_resume(job_ad_id):
         for category in combined_resume_data["skills"]:
             combined_resume_data["skills"][category] = list(set(combined_resume_data["skills"][category]))
         
+        # Update progress
+        resume_generation_jobs_collection.update_one(
+            {"_id": ObjectId(job_id)},
+            {"$set": {"progress": 70}}
+        )
+        
+        # Simulate AI processing time
+        time.sleep(2)
+        
         # Step 3: Tailor the COMBINED resume against the job ad
         tailoring_parser = ResumeTailoringParser()
         
         try:
             tailored_resume_data = tailoring_parser.tailor_resume(combined_resume_data, job_ad_data)
         except Exception as e:
-            return jsonify({"error": f"Failed to tailor combined resume: {str(e)}"}), 500
+            resume_generation_jobs_collection.update_one(
+                {"_id": ObjectId(job_id)},
+                {"$set": {"status": "failed", "error": f"Failed to tailor combined resume: {str(e)}"}}
+            )
+            return
+        
+        # Update progress
+        resume_generation_jobs_collection.update_one(
+            {"_id": ObjectId(job_id)},
+            {"$set": {"progress": 90}}
+        )
         
         # Step 4: Store as ONE tailored resume
         completed_resume_doc = {
-            "user_id": request.user_id,
+            "user_id": user_id,
             "job_ad_id": job_ad_id,
             "job_title": job_ad_data.get("job_title"),
             "company": job_ad_data.get("company"),
             "created_at": datetime.utcnow(),
-            "tailored_resume": tailored_resume_data,  # Single resume object
-            "source_resume_ids": resume_ids,  # Track which resumes were combined
-            "source_resume_names": source_resume_names,  # Track source names
+            "tailored_resume": tailored_resume_data,
+            "source_resume_ids": resume_ids,
+            "source_resume_names": source_resume_names,
             "job_ad_data": job_ad_data
         }
         
         # Insert the completed resume into the database
         result = completed_resumes_collection.insert_one(completed_resume_doc)
         
+        # Update job status to completed
+        resume_generation_jobs_collection.update_one(
+            {"_id": ObjectId(job_id)},
+            {"$set": {
+                "status": "completed",
+                "progress": 100,
+                "completed_resume_id": str(result.inserted_id),
+                "completed_at": datetime.utcnow()
+            }}
+        )
+        
+    except Exception as e:
+        resume_generation_jobs_collection.update_one(
+            {"_id": ObjectId(job_id)},
+            {"$set": {"status": "failed", "error": f"Server error: {str(e)}"}}
+        )
+
+@job_ads_bp.route("/job_ads/<job_ad_id>/create_tailored_resume", methods=["POST"])
+@require_firebase_auth
+def create_tailored_resume(job_ad_id):
+    """
+    Start asynchronous resume generation and return job ID for status tracking.
+    """
+    try:
+        # Validate job ad ID
+        if not ObjectId.is_valid(job_ad_id):
+            return jsonify({"error": "Invalid job ad ID"}), 400
+        
+        # Get request data
+        data = request.get_json()
+        if not data or "resume_ids" not in data:
+            return jsonify({"error": "Missing 'resume_ids' in request body"}), 400
+        
+        resume_ids = data["resume_ids"]
+        if not isinstance(resume_ids, list) or len(resume_ids) == 0:
+            return jsonify({"error": "resume_ids must be a non-empty list"}), 400
+        
+        # Validate all resume IDs
+        for resume_id in resume_ids:
+            if not ObjectId.is_valid(resume_id):
+                return jsonify({"error": f"Invalid resume ID: {resume_id}"}), 400
+        
+        # Create a job record for tracking
+        job_doc = {
+            "user_id": request.user_id,
+            "job_ad_id": job_ad_id,
+            "resume_ids": resume_ids,
+            "status": "pending",  # pending, processing, completed, failed
+            "progress": 0,
+            "created_at": datetime.utcnow()
+        }
+        
+        job_result = resume_generation_jobs_collection.insert_one(job_doc)
+        job_id = str(job_result.inserted_id)
+        
+        # Start background processing
+        thread = threading.Thread(
+            target=process_resume_generation_background,
+            args=(job_id, request.user_id, job_ad_id, resume_ids)
+        )
+        thread.daemon = True
+        thread.start()
+        
         return jsonify({
-            "message": f"Successfully created tailored resume for {job_ad_data.get('job_title')} combining {len(source_resume_names)} resumes",
-            "completed_resume_id": str(result.inserted_id),
-            "source_count": len(source_resume_names),
-            "source_names": source_resume_names
-        }), 200
-    
+            "message": "Resume generation started",
+            "job_id": job_id
+        }), 202  # 202 Accepted for async processing
+        
+    except Exception as e:
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
+
+@job_ads_bp.route("/resume_generation_jobs/<job_id>", methods=["GET"])
+@require_firebase_auth
+def get_generation_status(job_id):
+    """
+    Get the status of a resume generation job.
+    """
+    try:
+        if not ObjectId.is_valid(job_id):
+            return jsonify({"error": "Invalid job ID"}), 400
+        
+        job = resume_generation_jobs_collection.find_one({
+            "_id": ObjectId(job_id),
+            "user_id": request.user_id
+        })
+        
+        if not job:
+            return jsonify({"error": "Job not found"}), 404
+        
+        response_data = {
+            "job_id": job_id,
+            "status": job["status"],
+            "progress": job.get("progress", 0),
+            "created_at": job["created_at"].isoformat(),
+        }
+        
+        # Add completed resume ID if available
+        if job.get("completed_resume_id"):
+            response_data["completed_resume_id"] = job["completed_resume_id"]
+            response_data["completed_at"] = job.get("completed_at", datetime.utcnow()).isoformat()
+        
+        # Add error if failed
+        if job.get("error"):
+            response_data["error"] = job["error"]
+        
+        return jsonify(response_data), 200
+        
+    except Exception as e:
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
+
+@job_ads_bp.route("/resume_generation_jobs", methods=["GET"])
+@require_firebase_auth
+def list_generation_jobs():
+    """
+    List all resume generation jobs for the current user.
+    """
+    try:
+        jobs = list(resume_generation_jobs_collection.find({
+            "user_id": request.user_id
+        }).sort("created_at", -1).limit(50))  # Most recent 50 jobs
+        
+        jobs_data = []
+        for job in jobs:
+            job_data = {
+                "job_id": str(job["_id"]),
+                "job_ad_id": job["job_ad_id"],
+                "status": job["status"],
+                "progress": job.get("progress", 0),
+                "created_at": job["created_at"].isoformat(),
+            }
+            
+            if job.get("completed_resume_id"):
+                job_data["completed_resume_id"] = job["completed_resume_id"]
+                job_data["completed_at"] = job.get("completed_at", datetime.utcnow()).isoformat()
+            
+            if job.get("error"):
+                job_data["error"] = job["error"]
+                
+            jobs_data.append(job_data)
+        
+        return jsonify(jobs_data), 200
+        
     except Exception as e:
         return jsonify({"error": f"Server error: {str(e)}"}), 500

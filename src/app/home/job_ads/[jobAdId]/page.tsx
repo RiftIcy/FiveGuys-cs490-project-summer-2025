@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Container, Title, Loader, Text, Table, ScrollArea, Group, Button, Stack, Collapse, Tooltip, Checkbox, Modal } from "@mantine/core";
+import { Container, Title, Loader, Text, Table, ScrollArea, Group, Button, Stack, Collapse, Tooltip, Checkbox, Modal, Card, Progress } from "@mantine/core";
+import { IconCheck, IconClock, IconBolt } from "@tabler/icons-react";
 import { useParams, useRouter } from "next/navigation";
 import { notifications } from "@mantine/notifications";
 import { getAuth } from "firebase/auth";
@@ -50,6 +51,11 @@ export default function JobAdPage() {
 
     // Modal state
     const [modalOpened, setModalOpened] = useState(false);
+
+    // Resume generation tracking state
+    const [generationJobId, setGenerationJobId] = useState<string | null>(null);
+    const [generationStatus, setGenerationStatus] = useState<string | null>(null);
+    const [generationProgress, setGenerationProgress] = useState<number>(0);
 
     // Ensure user is authenticated
     const getAuthHeaders = async () => {
@@ -107,6 +113,72 @@ export default function JobAdPage() {
         fetchCompleted();
     }, []);
 
+    // Polling effect for generation job status
+    useEffect(() => {
+        if (!generationJobId) return;
+
+        const pollStatus = async () => {
+            try {
+                const authHeaders = await getAuthHeaders();
+                const response = await fetch(`http://localhost:5000/resume_generation_jobs/${generationJobId}`, {
+                    headers: authHeaders,
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch job status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                setGenerationStatus(data.status);
+                setGenerationProgress(data.progress || 0);
+
+                if (data.status === "completed") {
+                    // Update status to show checkmark
+                    setGenerationStatus("completed");
+                    setGenerationProgress(100);
+                    
+                    // CF009: Show checkmark briefly then redirect
+                    setTimeout(() => {
+                        // Navigate directly without showing notification (the destination page will handle success feedback)
+                        router.push(`/home/completed_resumes/${data.completed_resume_id}`);
+                        
+                        // Clear states after navigation
+                        setTimeout(() => {
+                            setGenerationJobId(null);
+                            setGenerationStatus(null);
+                            setGenerationProgress(0);
+                        }, 1000);
+                    }, 1500); // Show checkmark for 1.5 seconds
+                } else if (data.status === "failed") {
+                    // CF009: Show error confirmation
+                    notifications.show({
+                        title: "Generation Failed",
+                        message: data.error || "Failed to create tailored resume",
+                        color: "red",
+                        autoClose: 5000,
+                    });
+                    setGenerationJobId(null);
+                    setGenerationStatus(null);
+                    setGenerationProgress(0);
+                }
+            } catch (error) {
+                console.error("Polling error:", error);
+                notifications.show({
+                    title: "Status Check Failed",
+                    message: "Unable to check generation status",
+                    color: "orange",
+                    autoClose: 3000,
+                });
+            }
+        };
+
+        // Poll immediately, then every 2 seconds
+        pollStatus();
+        const interval = setInterval(pollStatus, 2000);
+        
+        return () => clearInterval(interval);
+    }, [generationJobId, ad, router]);
+
     if (loading) {
         return (
             <Container size="sm" py="xl">
@@ -124,11 +196,16 @@ export default function JobAdPage() {
 
     return (
         <Container size="lg" py="xl">
-            <Title order={2} mb="md">
-                Job Ad Details
-            </Title>
-            <ScrollArea>
-                <Table verticalSpacing="sm" withTableBorder>
+            <div style={{ 
+                opacity: generationJobId ? 0.6 : 1, 
+                transition: 'opacity 0.5s ease-in-out',
+                pointerEvents: generationJobId ? 'none' : 'auto'
+            }}>
+                <Title order={2} mb="md">
+                    Job Ad Details
+                </Title>
+                <ScrollArea>
+                    <Table verticalSpacing="sm" withTableBorder>
                     <Table.Thead>
                         <Table.Tr>
                             <Table.Th>Title</Table.Th>
@@ -290,6 +367,73 @@ export default function JobAdPage() {
                     Continue
                 </Button>
             </Group>
+            </div>
+
+            {/* CF010: Processing Status Indicator */}
+            {generationJobId && (
+                <>
+                    {/* Backdrop overlay */}
+                    <div style={{
+                        position: "fixed",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: "rgba(0, 0, 0, 0.3)",
+                        zIndex: 999
+                    }} />
+                    
+                    {/* Centered status card */}
+                    <div style={{
+                        position: "fixed",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        zIndex: 1000,
+                        width: "90%",
+                        maxWidth: "500px"
+                    }}>
+                        <Card 
+                            shadow="xl" 
+                            padding="xl" 
+                            withBorder 
+                            style={{ 
+                                borderColor: generationStatus === "processing" ? "#228be6" : generationStatus === "completed" ? "#51cf66" : "#fab005",
+                                backgroundColor: generationStatus === "completed" ? "#f8f9fa" : "#ffffff",
+                                boxShadow: "0 20px 40px rgba(0, 0, 0, 0.3)",
+                                borderWidth: "2px"
+                            }}
+                        >
+                    <Group justify="center" align="center">
+                        {generationStatus === "pending" && (
+                            <div style={{ textAlign: "center" }}>
+                                <IconClock size={48} color="#fab005" style={{ marginBottom: "8px" }} />
+                                <Text size="lg" fw={500}>Resume Generation Pending...</Text>
+                                <Text size="sm" c="dimmed">Initializing process...</Text>
+                            </div>
+                        )}
+                        
+                        {generationStatus === "processing" && (
+                            <div style={{ textAlign: "center", width: "100%" }}>
+                                <IconBolt size={48} color="#228be6" style={{ marginBottom: "8px" }} />
+                                <Text size="lg" fw={500} mb="xs">Creating Your Tailored Resume...</Text>
+                                <Text size="sm" c="dimmed" mb="md">Progress: {generationProgress}%</Text>
+                                <Progress value={generationProgress} size="lg" />
+                            </div>
+                        )}
+                        
+                        {generationStatus === "completed" && (
+                            <div style={{ textAlign: "center" }}>
+                                <IconCheck size={48} color="#51cf66" style={{ marginBottom: "12px" }} />
+                                <Text size="lg" fw={500} c="teal">Resume Generated Successfully!</Text>
+                                <Text size="sm" c="dimmed">You'll be redirected shortly...</Text>
+                            </div>
+                        )}
+                    </Group>
+                </Card>
+                </div>
+                </>
+            )}
 
             <Modal
                 opened={modalOpened}
@@ -309,13 +453,6 @@ export default function JobAdPage() {
                         </Button>
                         <Button
                             onClick={async () => {
-                                const loadingNotifId = notifications.show({
-                                    title: "Processing Request",
-                                    message: "Creating your tailored resume...",
-                                    autoClose: false,
-                                    withCloseButton: false,
-                                });
-
                                 try {
                                     const authHeaders = await getAuthHeaders();
                                     
@@ -340,28 +477,30 @@ export default function JobAdPage() {
 
                                     setModalOpened(false);
 
-                                    notifications.update({
-                                        id: loadingNotifId,
-                                        title: "Success",
-                                        message: result.message,
-                                        color: "teal",
-                                        autoClose: 3000,
-                                        onClose: () => {
-                                            router.push(`/home/completed_resumes/${result.completed_resume_id}`);
-                                        }
+                                    // CF009 & CF010: Start tracking the generation job
+                                    setGenerationJobId(result.job_id);
+                                    setGenerationStatus("pending");
+                                    setGenerationProgress(0);
+
+                                    notifications.show({
+                                        title: "Resume Generation Started",
+                                        message: "Your tailored resume is being created. You'll be notified when it's ready.",
+                                        color: "blue",
+                                        autoClose: 4000,
+                                        withCloseButton: false,
                                     });
                                 } 
                                 catch (error) {
-                                    notifications.update({
-                                        id: loadingNotifId,
-                                        loading: false,
+                                    notifications.show({
                                         title: "Error",
-                                        message: error instanceof Error ? error.message : "Failed to create tailored resume",
+                                        message: error instanceof Error ? error.message : "Failed to start resume generation",
                                         color: "red",
                                         autoClose: 5000,
                                     });
                                 }
                             }}
+                            disabled={generationJobId !== null}
+                            loading={generationJobId !== null}
                         >
                             Confirm
                         </Button>

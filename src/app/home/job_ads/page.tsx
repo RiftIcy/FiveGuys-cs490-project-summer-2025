@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Container, Title, Loader, Text, Table, ScrollArea, Group, Button, Stack, Collapse, Modal, Tooltip } from "@mantine/core";
+import { Container, Title, Loader, Text, Table, ScrollArea, Group, Button, Stack, Collapse, Modal, Tooltip, Badge } from "@mantine/core";
+import { IconCheck, IconClock, IconBolt } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { useRouter } from "next/navigation";
 import { getAuth } from "firebase/auth";
@@ -31,6 +32,7 @@ export default function JobAdsPage() {
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false)
+    const [generationJobs, setGenerationJobs] = useState<{[jobAdId: string]: any}>({});
     const router = useRouter();
 
     // Ensure user is authenticated
@@ -63,8 +65,68 @@ export default function JobAdsPage() {
                 setLoading(false);
             }
         }
+
+        async function fetchGenerationJobs() {
+            try {
+                const authHeaders = await getAuthHeaders();
+                const response = await fetch("http://localhost:5000/resume_generation_jobs", {
+                    headers: authHeaders,
+                });
+                
+                if (response.ok) {
+                    const jobs = await response.json();
+                    const jobsMap: {[jobAdId: string]: any} = {};
+                    
+                    // Group jobs by job_ad_id, keeping only the most recent active job per job ad
+                    jobs.forEach((job: any) => {
+                        if (job.status === "processing" || job.status === "pending") {
+                            if (!jobsMap[job.job_ad_id] || new Date(job.created_at) > new Date(jobsMap[job.job_ad_id].created_at)) {
+                                jobsMap[job.job_ad_id] = job;
+                            }
+                        }
+                    });
+                    
+                    setGenerationJobs(jobsMap);
+                }
+            } catch (err) {
+                console.error("Failed to load generation jobs:", err);
+            }
+        }
         
-        fetchJobAds(); // Call the async function
+        fetchJobAds();
+        fetchGenerationJobs();
+    }, []);
+
+    // Poll for generation job updates every 5 seconds
+    useEffect(() => {
+        const pollJobs = async () => {
+            try {
+                const authHeaders = await getAuthHeaders();
+                const response = await fetch("http://localhost:5000/resume_generation_jobs", {
+                    headers: authHeaders,
+                });
+                
+                if (response.ok) {
+                    const jobs = await response.json();
+                    const jobsMap: {[jobAdId: string]: any} = {};
+                    
+                    jobs.forEach((job: any) => {
+                        if (job.status === "processing" || job.status === "pending") {
+                            if (!jobsMap[job.job_ad_id] || new Date(job.created_at) > new Date(jobsMap[job.job_ad_id].created_at)) {
+                                jobsMap[job.job_ad_id] = job;
+                            }
+                        }
+                    });
+                    
+                    setGenerationJobs(jobsMap);
+                }
+            } catch (err) {
+                console.error("Failed to poll generation jobs:", err);
+            }
+        };
+
+        const interval = setInterval(pollJobs, 5000); // Poll every 5 seconds
+        return () => clearInterval(interval);
     }, []);
 
     const handleDelete = async (id: string) => {
@@ -148,7 +210,21 @@ export default function JobAdsPage() {
             {ads.map((ad) => (
               <React.Fragment key={ad._id}>
                 <Table.Tr>
-                  <Table.Td>{ad.parse_result.job_title}</Table.Td>
+                  <Table.Td>
+                    <Group gap="xs">
+                      <Text>{ad.parse_result.job_title}</Text>
+                      {/* CF010: Show processing status indicator */}
+                      {generationJobs[ad._id] && (
+                        <Badge 
+                          color={generationJobs[ad._id].status === "processing" ? "blue" : "yellow"} 
+                          size="sm"
+                          leftSection={generationJobs[ad._id].status === "processing" ? <IconBolt size={12} /> : <IconClock size={12} />}
+                        >
+                          {generationJobs[ad._id].status === "processing" ? "Creating Resume..." : "Pending"}
+                        </Badge>
+                      )}
+                    </Group>
+                  </Table.Td>
                   <Table.Td>{ad.parse_result.company}</Table.Td>
                   <Table.Td>{ad.parse_result.location}</Table.Td>
                   <Table.Td>{new Date(ad.uploaded_at).toLocaleString()}</Table.Td>
