@@ -84,7 +84,7 @@ export default function TopBanner({ toggleSidePanel }: TopBannerProps) {
       <Title order={3}>Five Guys</Title>
 
       <Group align="center">
-        <Menu withArrow>
+        <Menu withArrow withinPortal position="bottom-end">
           <Menu.Target>
             <UnstyledButton>
               <Avatar color="blue" radius="xl">

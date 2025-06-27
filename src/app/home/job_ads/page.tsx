@@ -229,7 +229,7 @@ export default function JobAdsPage() {
                   <Table.Td>{ad.parse_result.location}</Table.Td>
                   <Table.Td>{new Date(ad.uploaded_at).toLocaleString()}</Table.Td>
                   <Table.Td>
-                    <Group>
+                    <Group gap="xs" wrap="nowrap" justify="flex-end">
 
                       <Tooltip label={expandedId === ad._id ? "Hide job ad" : "View job ad"}>
                       <Button variant="light" size="xs" onClick={() => toggleExpand(ad._id)}>
