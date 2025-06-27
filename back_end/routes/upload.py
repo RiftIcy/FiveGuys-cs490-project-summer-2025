@@ -146,9 +146,9 @@ def list_uploads():
         })
     return jsonify(out), 200
 
-# ───────────────────────────────
+# ──────────────────────────────────────────────────────────────
 # GET /uploads/<id>/content – get single upload with file content
-# ───────────────────────────────
+# ──────────────────────────────────────────────────────────────
 @upload_bp.route("/uploads/<id>/content", methods=["GET"])
 @require_firebase_auth
 def get_upload(id):
@@ -170,6 +170,21 @@ def get_upload(id):
     file_content = doc.get("file_content")
     if file_content and isinstance(file_content, bytes):
         file_content = base64.b64encode(file_content).decode('utf-8')
+    
+    # For ODT files, extract text for preview
+    extracted_text_content = None
+    if doc.get("file_type") == "odt" and doc.get("file_content"):
+        try:
+            # Save to a temporary file to extract text
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".odt") as tmp:
+                tmp.write(doc["file_content"])
+                tmp_path = tmp.name
+            
+            extracted_text_content = extract_text(tmp_path)
+            os.remove(tmp_path)  # Clean up temp file
+        except Exception as e:
+            print(f"ODT text extraction failed: {e}")
+            extracted_text_content = None
 
     # Return the full document (including file_content for preview)
     result = {
@@ -179,6 +194,7 @@ def get_upload(id):
         "file_type": doc.get("file_type"),
         "biography_text": doc.get("biography_text"),
         "snippet": doc.get("snippet"),
+        "extracted_text": extracted_text_content,  # For ODT files
         "uploadedAt": doc.get("uploadedAt", datetime.utcnow()).isoformat(),
     }
     

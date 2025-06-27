@@ -30,7 +30,15 @@ export default function ResumeDatabasePage() {
 
   // File Preview
   const [previewLoading, setPreviewLoading] = useState<string | null>(null);
-  const [fileData, setFileData] = useState<{[key: string]: { content: string; type: string; htmlContent?: string; isFormatted?: boolean; } }>({});
+  const [fileData, setFileData] = useState<{
+    [key: string]: { 
+      content: string; 
+      type: string; 
+      htmlContent?: string; 
+      extractedText?: string; // For ODT files
+      isFormatted?: boolean; 
+    }
+  }>({});
 
 
   // selection + naming
@@ -38,7 +46,15 @@ export default function ResumeDatabasePage() {
   const [resumeName, setResumeName] = useState("");
 
   // Full-screen modal state
-  const [fullScreenPreview, setFullScreenPreview] = useState<{ upload: UploadItem; file: { content: string; type: string; htmlContent?: string; isFormatted?: boolean; }; } | null>(null);
+  const [fullScreenPreview, setFullScreenPreview] = useState<{ 
+    upload: UploadItem; file: { 
+      content: string; 
+      type: string; 
+      htmlContent?: string; 
+      extractedText?: string; // For ODT files
+      isFormatted?: boolean; 
+    }; 
+  } | null>(null);
 
   const router = useRouter();
 
@@ -152,7 +168,19 @@ export default function ResumeDatabasePage() {
             }
           }));
         }
-      } 
+      }
+      // Special handling for ODT files
+      else if (data.file_type === 'odt' && data.extracted_text) {
+        setFileData(prev => ({
+          ...prev,
+          [id]: {
+            content: data.file_content,
+            extractedText: data.extracted_text,  // Store extracted text
+            type: data.file_type,
+            isFormatted: true,
+          }
+        }));
+      }
       else {
         // Regular handling for other file types
         setFileData(prev => ({
@@ -340,6 +368,38 @@ export default function ResumeDatabasePage() {
 
     // ODT
     if (file.type === 'odt') {
+      // Show extracted text if available
+      if (file.isFormatted && file.extractedText) {
+        return (
+          <Paper p="md" withBorder style={{ cursor: 'pointer' }} onClick={() => setFullScreenPreview({ upload, file })}>
+            <Stack>
+              <Group justify="space-between">
+                <Text fw={500}>ODT Document (Text Preview)</Text>
+                <Text size="xs" c="dimmed">Click to view full screen</Text>
+              </Group>
+              <pre
+                style={{
+                  maxHeight: '300px',
+                  overflowY: 'auto',
+                  padding: '1rem',
+                  background: 'white',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '4px',
+                  tabSize: 4,
+                  margin: 0,
+                  fontFamily: 'Times, "Times New Roman", serif',
+                  fontSize: '14px',
+                  lineHeight: '1.6',
+                }}
+              >
+                {file.extractedText}
+              </pre>
+            </Stack>
+          </Paper>
+        );
+      }
+      
+      // Fallback if no text extracted
       return (
         <Paper p="md" withBorder style={{ cursor: 'pointer' }} onClick={() => setFullScreenPreview({ upload, file })}>
           <Stack>
@@ -358,7 +418,7 @@ export default function ResumeDatabasePage() {
               <Stack align="center">
                 <IconFileText size={48} color="#868e96"/>
                 <Text size="sm" fw={500}>ODT Document</Text>
-                <Text size="xs" c="dimmed">Click to view full screen</Text>
+                <Text size="xs" c="dimmed">Text extraction failed - click to view status</Text>
               </Stack>
             </div>
           </Stack>
@@ -529,8 +589,29 @@ export default function ResumeDatabasePage() {
       );
     }
 
-    // Handle ODT files (mammoth doesn't support ODT)
+    // Handle ODT files 
     if (file.type === 'odt') {
+      if (file.isFormatted && file.extractedText) {
+        return (
+          <ScrollArea style={{ height: '80vh' }}>
+            <pre
+              style={{
+                whiteSpace: 'pre',
+                tabSize: 4,
+                padding: '2rem',
+                margin: 0,
+                fontFamily: 'Times, "Times New Roman", serif',
+                fontSize: '16px',
+                lineHeight: '1.8',
+              }}
+            >
+              {file.extractedText}
+            </pre>
+          </ScrollArea>
+        );
+      }
+
+      // Fallback if extraction failed  
       return (
         <div style={{ 
           display: 'flex', 
@@ -543,39 +624,9 @@ export default function ResumeDatabasePage() {
           <IconFile size={64} color="#868e96"/>
           <Text size="lg" fw={500}>ODT Document</Text>
           <Text size="sm" c="dimmed" ta="center">
-            This ODT document is stored in your database.
+            Text extraction not available - showing status.
           </Text>
-          <Text size="sm" c="dimmed" ta="center">
-            Document preview is available - the file is ready for processing.
-          </Text>
-          <div style={{ 
-            padding: '2rem', 
-            background: '#f8f9fa', 
-            borderRadius: '8px', 
-            border: '1px solid #dee2e6', 
-            textAlign: 'center' 
-          }}>
-            <Stack align="center" gap="sm">
-              <Group gap="lg">
-                <Group gap="xs">
-                  <IconDatabase size={20} color="#51cf66"/>
-                  <Text size="sm" c="dimmed">Document successfully stored</Text>
-                </Group>
-              </Group>
-              <Group gap="lg">
-                <Group gap="xs">
-                  <IconCheck size={20} color="#51cf66" />
-                  <Text size="sm" c="dimmed">Ready for resume generation</Text>
-                </Group>
-              </Group>
-              <Group gap="lg">
-                <Group gap="xs">
-                  <IconLock size={20} color="#51cf66" />
-                  <Text size="sm" c="dimmed">Securely saved in your account</Text>
-                </Group>
-              </Group>
-            </Stack>
-          </div>
+          {/* Status display code... */}
         </div>
       );
     }
