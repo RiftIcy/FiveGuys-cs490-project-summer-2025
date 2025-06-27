@@ -5,6 +5,7 @@ import { Container, Title, Loader, Text, Table, ScrollArea, Group, Button, Stack
 import { useParams, useRouter } from "next/navigation";
 import { notifications } from "@mantine/notifications";
 import { getAuth } from "firebase/auth";
+import { resourceLimits } from "worker_threads";
 
 interface JobAd {
     _id: string;
@@ -308,18 +309,58 @@ export default function JobAdPage() {
                         </Button>
                         <Button
                             onClick={async () => {
-                                // TODO: call your API to create the resume
-                                // e.g.
-                                // await fetch(
-                                //   `/job_ads/${jobAdId}/create`,
-                                //   {
-                                //     method: "POST",
-                                //     headers: { "Content-Type": "application/json" },
-                                //     body: JSON.stringify({ resumes: [...selectedIds] }),
-                                //   }
-                                // );
-                                setModalOpened(false);
-                                router.push("/resumes/created");
+                                const loadingNotifId = notifications.show({
+                                    title: "Processing Request",
+                                    message: "Creating your tailored resume...",
+                                    autoClose: false,
+                                    withCloseButton: false,
+                                });
+
+                                try {
+                                    const authHeaders = await getAuthHeaders();
+                                    
+                                    const response = await fetch(
+                                        `http://localhost:5000/job_ads/${jobAdId}/create_tailored_resume`, {
+                                            method: "POST",
+                                            headers: {
+                                                "Content-Type": "application/json",
+                                                ...authHeaders,
+                                            },
+                                            body: JSON.stringify({ 
+                                                resume_ids: [...selectedIds] 
+                                            }),
+                                        }
+                                    );
+
+                                    const result = await response.json();
+
+                                    if(!response.ok) {
+                                        throw new Error(result.message || response.statusText);
+                                    }
+
+                                    setModalOpened(false);
+
+                                    notifications.update({
+                                        id: loadingNotifId,
+                                        title: "Success",
+                                        message: result.message,
+                                        color: "teal",
+                                        autoClose: 3000,
+                                        onClose: () => {
+                                            router.push(`/home/completed_resumes/${result.completed_resume_id}`);
+                                        }
+                                    });
+                                } 
+                                catch (error) {
+                                    notifications.update({
+                                        id: loadingNotifId,
+                                        loading: false,
+                                        title: "Error",
+                                        message: error instanceof Error ? error.message : "Failed to create tailored resume",
+                                        color: "red",
+                                        autoClose: 5000,
+                                    });
+                                }
                             }}
                         >
                             Confirm

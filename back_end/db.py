@@ -10,3 +10,4 @@ client = MongoClient(MONGO_URI)
 db = client['fiveguys']
 biography_collection = db['biographies']
 job_ads_collection = db['job ads']
+completed_resumes_collection = db['completed_resumes']

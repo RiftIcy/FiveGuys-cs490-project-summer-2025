@@ -101,4 +101,67 @@ class JobAdParser:
         )
         return json.loads(resp.choices[0].message.content)
 
-#{"role": "system", "content": "Return JSON with keys: name, contact, skills, education, jobs."},
+class ResumeTailoringParser:
+    """
+    Wrap OpenAI chat API to tailor resume data based on job ad requirements.
+    """
+    def __init__(self, api_key: str = None):
+        key = api_key or OPENAI_API_KEY
+        if not key:
+            raise ValueError("OpenAI API key must be set in OPENAI_API_KEY")
+        self.client = OpenAI(api_key=key)
+
+    def tailor_resume(self, resume_data: dict, job_ad_data: dict) -> dict:
+        """
+        Tailor a resume based on job ad requirements.
+        
+        Args:
+            resume_data: Parsed resume data from ResumeParser
+            job_ad_data: Parsed job ad data from JobAdParser
+            
+        Returns:
+            Tailored resume data optimized for the specific job
+        """
+        resume_json = json.dumps(resume_data, indent=2)
+        job_ad_json = json.dumps(job_ad_data, indent=2)
+        
+        resp = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            response_format={"type": "json_object"},
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an expert resume writer. Your task is to tailor an existing resume to better match a specific job posting. "
+                        "You will receive a resume in JSON format and a job posting in JSON format. "
+                        "Your goal is to optimize the resume for this specific job while maintaining accuracy and truthfulness. "
+                        
+                        "IMPORTANT RULES: "
+                        "1. NEVER fabricate or add false information (skills, experience, education, etc.) "
+                        "2. Only work with the existing data provided in the resume "
+                        "3. You may reorder, rephrase, emphasize, or reorganize existing content "
+                        "4. You may prioritize certain skills or experiences that match the job requirements "
+                        "5. Keep the same JSON structure as the input resume "
+                        "6. Maintain professional language and formatting "
+                        
+                        "TAILORING STRATEGIES: "
+                        "- Reorder skills to prioritize those mentioned in the job posting "
+                        "- Rephrase job responsibilities and accomplishments to use keywords from the job ad when appropriate "
+                        "- Emphasize relevant experience and de-emphasize less relevant experience "
+                        "- Adjust the career objective to align with the job title and company "
+                        "- Reorder job experiences to highlight the most relevant ones first "
+                        
+                        "Return the tailored resume in the exact same JSON format as the input resume. "
+                        "Output only valid JSON. Do not include any explanations, formatting, or comments."
+                    )
+                },
+                {
+                    "role": "user", 
+                    "content": f"Please tailor this resume:\n\nRESUME DATA:\n{resume_json}\n\nFOR THIS JOB POSTING:\n{job_ad_json}"
+                },
+            ],
+            temperature=0.2,  # Slightly higher temperature for creative rephrasing while maintaining accuracy
+        )
+        return json.loads(resp.choices[0].message.content)
+
+#{"role": "system", "content": "Return JSON with keys: name, contact, skills, education, jobs."}
