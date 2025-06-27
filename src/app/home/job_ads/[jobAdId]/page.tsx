@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { Container, Title, Loader, Text, Table, ScrollArea, Group, Button, Stack, Collapse, Tooltip, Checkbox, Modal } from "@mantine/core";
 import { useParams, useRouter } from "next/navigation";
+import { notifications } from "@mantine/notifications";
+import { getAuth } from "firebase/auth";
 
 interface JobAd {
     _id: string;
@@ -48,34 +50,55 @@ export default function JobAdPage() {
     // Modal state
     const [modalOpened, setModalOpened] = useState(false);
 
-    // Fetch job ad
-    useEffect(() => {
-        if (!jobAdId) return;
-        fetch(`http://localhost:5000/job_ads/${jobAdId}`)
-            .then((response) => {
-                if (!response.ok) throw new Error(response.statusText);
-                return response.json();
-            })
-            .then((data: JobAd) => setAd(data))
-            .catch((err) => setError(err.message))
-            .finally(() => setLoading(false));
-    }, [jobAdId]);
+    // Ensure user is authenticated
+    const getAuthHeaders = async () => {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("User not authenticated");
+        const idToken = await user.getIdToken();
+        return { Authorization: `Bearer ${idToken}` };
+    };
 
     // Fetch completed resumes
     useEffect(() => {
+        if (!jobAdId) return;
+        
+        async function fetchJobAd() {
+            try {
+                const authHeaders = await getAuthHeaders(); // Add this
+                
+                const response = await fetch(`http://localhost:5000/job_ads/${jobAdId}`, {
+                    headers: authHeaders, // Add this
+                });
+                
+                if (!response.ok) throw new Error(response.statusText);
+                const data = await response.json();
+                setAd(data);
+            } catch (err) {
+                setError(err instanceof Error ? err.message : String(err));
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        fetchJobAd();
+    }, [jobAdId]);
+
+    // Fetch completed resumes with auth
+    useEffect(() => {
         async function fetchCompleted() {
             try {
-                const response = await fetch(
-                    "http://localhost:5000/resume/resumes?status=complete"
-                );
-                if (!response.ok)
-                    throw new Error(`Fetch failed: ${response.status}`);
+                const authHeaders = await getAuthHeaders(); // Add this
+                
+                const response = await fetch("http://localhost:5000/resume/resumes?status=complete", {
+                    headers: authHeaders, // Add this
+                });
+                
+                if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
                 const data = await response.json();
                 setResumes(data);
             } catch (error) {
-                setResumesError(
-                    error instanceof Error ? error.message : String(error)
-                );
+                setResumesError(error instanceof Error ? error.message : String(error));
             } finally {
                 setResumesLoading(false);
             }

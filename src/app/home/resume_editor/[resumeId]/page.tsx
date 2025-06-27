@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Container, Text } from "@mantine/core";
 import ResumeInfo from "@/components/forms/ResumeInfo";
+import { getAuth } from 'firebase/auth';
 
 export default function Resume_Editor() {
   const params = useParams();
@@ -17,7 +18,17 @@ export default function Resume_Editor() {
       if (!resumeId) return;
 
       try {
-        const res = await fetch(`http://localhost:5000/resume/${resumeId}`);
+        // Add Firebase authentication
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("User not authenticated");
+        const idToken = await user.getIdToken();
+
+        const res = await fetch(`http://localhost:5000/resume/${resumeId}`, {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        });
         const data = await res.json();
 
         if(res.ok) {

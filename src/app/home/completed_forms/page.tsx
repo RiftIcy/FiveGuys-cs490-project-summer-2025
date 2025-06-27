@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Container, Title, Stack, Card, Text, Button, Loader, Group, Tooltip, Modal } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
+import { getAuth } from 'firebase/auth';
 
 interface ResumeSummary {
   _id: string;
@@ -24,7 +25,16 @@ export default function CompletedFormPage() {
   useEffect(() => {
     async function fetchCompleted() {
       try {
-        const response = await fetch('http://localhost:5000/resume/resumes?status=complete');
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("User not authenticated");
+        const idToken = await user.getIdToken();
+
+        const response = await fetch('http://localhost:5000/resume/resumes?status=complete', {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        });
         if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
         const data = await response.json();
         setResumes(data);
@@ -53,8 +63,16 @@ export default function CompletedFormPage() {
     if(!toDelete) return;
     setDeleting(true);
     try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) throw new Error("User not authenticated");
+      const idToken = await user.getIdToken();
+
       const response = await fetch(`http://localhost:5000/resume/${toDelete._id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${idToken}`
+        }
       });
 
       if(!response.ok) throw new Error(`Delete Failed: ${response.status}`);
@@ -73,11 +91,19 @@ export default function CompletedFormPage() {
   // When the user presses edit make the from incomplete again
   const handleEdit = async (res: ResumeSummary) => {
     try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) throw new Error("User not authenticated");
+      const idToken = await user.getIdToken();
+      
       const response = await fetch(
         `http://localhost:5000/resume/${res._id}/set_complete`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`
+          },
           body: JSON.stringify({ isComplete: false }),
         }
       );
@@ -131,7 +157,7 @@ export default function CompletedFormPage() {
 
       <Group mt="md">
         <Tooltip label="Continue to the Job Posting">
-          <Button variant='white' color='gray' onClick={() => router.push("/home/job_posting")}>
+          <Button variant='filled' color='gray' onClick={() => router.push("/home/job_posting")}>
             Continue
           </Button>
         </Tooltip>

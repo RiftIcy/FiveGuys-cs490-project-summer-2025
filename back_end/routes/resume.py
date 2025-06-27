@@ -7,6 +7,7 @@ import sys
 from db import biography_collection
 from parser.extractors import extract_text
 from parser.parser import ResumeParser
+from .auth_utils import require_firebase_auth
 
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 PHONE_REGEX = re.compile(r"^\d{3}-\d{3}-\d{4}$")
@@ -14,6 +15,7 @@ PHONE_REGEX = re.compile(r"^\d{3}-\d{3}-\d{4}$")
 resume_bp = Blueprint("resume", __name__)
 
 @resume_bp.route("/resume/<resume_id>/update_contact", methods=["POST"])
+@require_firebase_auth
 def update_contact(resume_id):
     try:
         if not ObjectId.is_valid(resume_id):
@@ -36,7 +38,7 @@ def update_contact(resume_id):
                 return jsonify({"error": f"Invalid email: {email}"}), 400
         
         result = biography_collection.update_one(
-            {"_id": ObjectId(resume_id)},
+            {"_id": ObjectId(resume_id), "user_id": request.user_id},
             {"$set": {"parse_result.contact.emails": emails}}
         )
 
@@ -49,6 +51,7 @@ def update_contact(resume_id):
         return jsonify({"error": str(e)}), 500
 
 @resume_bp.route("/resume/<resume_id>/update_phone", methods=["POST"])
+@require_firebase_auth
 def update_phone(resume_id):
     try:
         if not ObjectId.is_valid(resume_id):
@@ -67,7 +70,7 @@ def update_phone(resume_id):
                 return jsonify({"error": f"Invalid phone: {phone}"}), 400
 
         result = biography_collection.update_one(
-            {"_id": ObjectId(resume_id)},
+            {"_id": ObjectId(resume_id), "user_id": request.user_id},
             {"$set": {"parse_result.contact.phones": phones}}
         )
 
@@ -79,6 +82,7 @@ def update_phone(resume_id):
         return jsonify({"error": str(e)}), 500
     
 @resume_bp.route("/resume/<resume_id>/update_objective", methods=["POST"])
+@require_firebase_auth
 def update_career_objective(resume_id):
     try:
         if not ObjectId.is_valid(resume_id):
@@ -93,7 +97,7 @@ def update_career_objective(resume_id):
             return jsonify({"error": "Career objective cannot be empty"}), 400
         
         result = biography_collection.update_one(
-            {"_id": ObjectId(resume_id)},
+            {"_id": ObjectId(resume_id), "user_id": request.user_id},
             {"$set": {"parse_result.career_objective": career_objective}}
         )
 
@@ -105,6 +109,7 @@ def update_career_objective(resume_id):
         return jsonify({"error": str(e)}), 500
 
 @resume_bp.route("/resume/<resume_id>/update_skills", methods=["POST"])
+@require_firebase_auth
 def update_skills(resume_id):
     try:
         if not ObjectId.is_valid(resume_id):
@@ -127,7 +132,7 @@ def update_skills(resume_id):
                     return jsonify({"error": f"Invalid skill '{skill}' in category '{category}'"}), 400
         
         result = biography_collection.update_one(
-            {"_id": ObjectId(resume_id)},
+            {"_id": ObjectId(resume_id), "user_id": request.user_id},
             {"$set": {"parse_result.skills": skills}}
         )
 
@@ -139,6 +144,7 @@ def update_skills(resume_id):
         return jsonify({"error": str(e)}), 500
 
 @resume_bp.route("/resume/<resume_id>/update_job/<int:index>", methods=["POST"])
+@require_firebase_auth
 def update_job_entry(resume_id, index):
     try:
         if not ObjectId.is_valid(resume_id):
@@ -159,7 +165,10 @@ def update_job_entry(resume_id, index):
             return jsonify({"error": "Responsibilities and accomplishments must be lists"}), 400
 
         # Replace the job at the given index
-        resume = biography_collection.find_one({"_id": ObjectId(resume_id)})
+        resume = biography_collection.find_one({
+            "_id": ObjectId(resume_id),
+            "user_id": request.user_id
+        })
 
         if not resume:
             return jsonify({"error": "Resume not found"}), 404
@@ -170,7 +179,7 @@ def update_job_entry(resume_id, index):
 
         update_path = f"parse_result.jobs.{index}"
         result = biography_collection.update_one(
-            {"_id": ObjectId(resume_id)},
+            {"_id": ObjectId(resume_id), "user_id": request.user_id},
             {"$set": {update_path: job}}
         )
 
@@ -180,6 +189,7 @@ def update_job_entry(resume_id, index):
         return jsonify({"error": str(e)}), 500
 
 @resume_bp.route("/resume/<resume_id>/add_job", methods=["POST"])
+@require_firebase_auth
 def add_job_entry(resume_id):
     try:
         if not ObjectId.is_valid(resume_id):
@@ -201,7 +211,7 @@ def add_job_entry(resume_id):
             return jsonify({"error": "Responsibilities and accomplishments must be lists"}), 400
 
         result = biography_collection.update_one(
-            {"_id": ObjectId(resume_id)},
+            {"_id": ObjectId(resume_id), "user_id": request.user_id},
             {"$push": {"parse_result.jobs": new_job}}
         )
 
@@ -213,6 +223,7 @@ def add_job_entry(resume_id):
         return jsonify({"error": str(e)}), 500
 
 @resume_bp.route("/resume/<resume_id>/set_jobs", methods=["POST"])
+@require_firebase_auth
 def set_all_jobs(resume_id):
     try:
         if not ObjectId.is_valid(resume_id):
@@ -240,7 +251,7 @@ def set_all_jobs(resume_id):
                 return jsonify({"error": f"Job {idx+1} has invalid or empty company"}), 400
 
         result = biography_collection.update_one(
-            {"_id": ObjectId(resume_id)},
+            {"_id": ObjectId(resume_id), "user_id": request.user_id},
             {"$set": {"parse_result.jobs": jobs}}
         )
         if result.matched_count == 0:
@@ -251,12 +262,16 @@ def set_all_jobs(resume_id):
         return jsonify({"error": str(e)}), 500
 
 @resume_bp.route("/resume/<resume_id>/delete_job/<int:index>", methods=["DELETE"])
+@require_firebase_auth
 def delete_job_entry(resume_id, index):
     try:
         if not ObjectId.is_valid(resume_id):
             return jsonify({"error": "Invalid resume ID"}), 400
         
-        doc = biography_collection.find_one({"_id": ObjectId(resume_id)})
+        doc = biography_collection.find_one({
+            "_id": ObjectId(resume_id),
+            "user_id": request.user_id
+        })
         if not doc:
             return jsonify({"error": "Resume not found"}), 404
         
@@ -266,7 +281,7 @@ def delete_job_entry(resume_id, index):
         
         jobs.pop(index)
         biography_collection.update_one(
-            {"_id": ObjectId(resume_id)},
+            {"_id": ObjectId(resume_id), "user_id": request.user_id},
             {"$set": {"parse_result.jobs": jobs}}
         )
         return jsonify({"success": True}), 200
@@ -276,6 +291,7 @@ def delete_job_entry(resume_id, index):
 
 
 @resume_bp.route("/resume/<resume_id>/add_education", methods=["POST"])
+@require_firebase_auth
 def add_education(resume_id):
     if not ObjectId.is_valid(resume_id):
         return jsonify({"error": "Invalid resume ID"}), 400
@@ -284,7 +300,10 @@ def add_education(resume_id):
     if not isinstance(newEdu, dict):
         return jsonify({"error": "Missing newEdu payload"}), 400
 
-    doc = biography_collection.find_one({"_id": ObjectId(resume_id)})
+    doc = biography_collection.find_one({
+        "_id": ObjectId(resume_id),
+        "user_id": request.user_id  # Ensure the user owns this resume
+    })
     if not doc:
         return jsonify({"error": "Resume not found"}), 404
 
@@ -292,7 +311,7 @@ def add_education(resume_id):
     educations.append(newEdu)
 
     biography_collection.update_one(
-        {"_id": ObjectId(resume_id)},
+        {"_id": ObjectId(resume_id), "user_id": request.user_id},
         {"$set": {"parse_result.education": educations}}
     )
     return jsonify({"success": True}), 200
@@ -300,6 +319,7 @@ def add_education(resume_id):
 
 
 @resume_bp.route("/resume/<resume_id>/update_education/<int:index>", methods=["POST"])
+@require_firebase_auth
 def update_education(resume_id, index):
     # 1) Validate ID
     if not ObjectId.is_valid(resume_id):
@@ -312,7 +332,10 @@ def update_education(resume_id, index):
     updated = data["updatedEdu"]
 
     # 3) Fetch existing document
-    doc = biography_collection.find_one({"_id": ObjectId(resume_id)})
+    doc = biography_collection.find_one({
+        "_id": ObjectId(resume_id),
+        "user_id": request.user_id,  # Ensure the user owns this resume
+    })
     if not doc:
         return jsonify({"error": "Resume not found"}), 404
 
@@ -326,13 +349,13 @@ def update_education(resume_id, index):
     try:
         if index < len(edus):
             biography_collection.update_one(
-                {"_id": ObjectId(resume_id)},
+                {"_id": ObjectId(resume_id), "user_id": request.user_id},
                 {"$set": {f"parse_result.education.{index}": updated}}
             )
         else:
             # append as a new entry
             biography_collection.update_one(
-                {"_id": ObjectId(resume_id)},
+                {"_id": ObjectId(resume_id), "user_id": request.user_id},
                 {"$push": {"parse_result.education": updated}}
             )
     except Exception as e:
@@ -341,11 +364,15 @@ def update_education(resume_id, index):
 
 
 @resume_bp.route("/resume/<resume_id>/delete_education/<int:index>", methods=["DELETE"])
+@require_firebase_auth
 def delete_education(resume_id, index):
     if not ObjectId.is_valid(resume_id):
         return jsonify({"error": "Invalid resume ID"}), 400
 
-    doc = biography_collection.find_one({"_id": ObjectId(resume_id)})
+    doc = biography_collection.find_one({
+        "_id": ObjectId(resume_id),
+        "user_id": request.user_id
+    })
     if not doc:
         return jsonify({"error": "Resume not found"}), 404
 
@@ -361,7 +388,7 @@ def delete_education(resume_id, index):
     edus.pop(index)
 
     result = biography_collection.update_one(
-        {"_id": ObjectId(resume_id)},
+        {"_id": ObjectId(resume_id), "user_id": request.user_id},
         {"$set": {"parse_result.education": edus}}
     )
 
@@ -371,6 +398,7 @@ def delete_education(resume_id, index):
 
 
 @resume_bp.route("/resume/<resume_id>/set_educations", methods=["POST"])
+@require_firebase_auth
 def set_educations(resume_id):
     if not ObjectId.is_valid(resume_id):
         return jsonify({"error": "Invalid resume ID"}), 400
@@ -380,19 +408,23 @@ def set_educations(resume_id):
         return jsonify({"error": "Missing or invalid educations payload"}), 400
 
     biography_collection.update_one(
-        {"_id": ObjectId(resume_id)},
+        {"_id": ObjectId(resume_id), "user_id": request.user_id},
         {"$set": {"parse_result.education": newList}}
     )
     return jsonify({"success": True}), 200
 
 @resume_bp.route("/resume/<resume_id>", methods=["GET"])
+@require_firebase_auth
 def get_resume(resume_id):
     # 1) Validate resume_id
     if not ObjectId.is_valid(resume_id):
         return jsonify({"error": "Invalid resume ID"}), 400
     
     # 2) Load document
-    doc = biography_collection.find_one({"_id": ObjectId(resume_id)})
+    doc = biography_collection.find_one({
+        "_id": ObjectId(resume_id),
+        "user_id": request.user_id  # Ensure the user owns this resume
+    })
     if not doc:
         return jsonify({"error": "Resume not found"}), 404
     
@@ -417,19 +449,25 @@ def get_resume(resume_id):
     return  jsonify(payload), 200
 
 @resume_bp.route("/api/reparse-history/<resume_id>", methods=["POST"])
+@require_firebase_auth
 def reparse_resume(resume_id):
     # 1) validate ID
     if not ObjectId.is_valid(resume_id):
         return jsonify({"error": "Invalid resume ID"}), 400
 
     # 2) fetch the stored document
-    doc = biography_collection.find_one({"_id": ObjectId(resume_id)})
+    doc = biography_collection.find_one({
+        "_id": ObjectId(resume_id),
+        "user_id": request.user_id
+    })
     if not doc:
         return jsonify({"error": "Resume not found"}), 404
 
     # 3) determine source for re-parsing
+    text = None
+
     if doc.get("file_content") and doc.get("filename"):
-        # write out a temp file with the correct suffix so extract_text can dispatch
+        # Original upload with file
         suffix = os.path.splitext(doc["filename"])[1]  # e.g. ".pdf", ".docx", ".txt", etc.
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             tmp.write(doc["file_content"])
@@ -442,6 +480,45 @@ def reparse_resume(resume_id):
     elif doc.get("biography_text"):
         # no original file—fall back to the raw text the user pasted
         text = doc["biography_text"]
+    
+    elif doc.get("createdFrom"):
+        # Generated resume - reconstruct from source uploads
+        source_ids = doc.get("createdFrom", [])
+        if not source_ids:
+            return jsonify({"error": "Generated resume has no source uploads"}), 400
+        
+        text_parts = []
+        for source_id in source_ids:
+            try:
+                source_doc = biography_collection.find_one({
+                    "_id": ObjectId(source_id),
+                    "user_id": request.user_id  # Ensure the user owns this source
+                })
+                if not source_doc:
+                    continue  # Skip if source not found
+                
+                if source_doc.get("biography_text"):
+                    text_parts.append(source_doc["biography_text"])
+
+                elif source_doc.get("file_content") and source_doc.get("file_type"):
+                    suffix = f".{source_doc['file_type']}"
+
+                    # Create a temporary file to extract text from the source
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                        tmp.write(source_doc["file_content"])
+                        tmp_path = tmp.name
+                    try:
+                        extracted = extract_text(tmp_path)
+                        text_parts.append(extracted)
+                    finally:
+                        os.remove(tmp_path)
+            except Exception:
+                continue  # Ignore any errors with individual sources
+
+        if not text_parts:
+            return jsonify({"error": "No valid source uploads found for re-parsing"}), 400
+        
+        text = "\n".join(text_parts)
 
     else:
         return jsonify({"error": "No source to re-parse"}), 400
@@ -455,7 +532,7 @@ def reparse_resume(resume_id):
 
     # 5) overwrite parse_result wholesale
     biography_collection.update_one(
-        {"_id": ObjectId(resume_id)},
+        {"_id": ObjectId(resume_id), "user_id": request.user_id},
         {"$set": {"parse_result": new_parse}}
     )
 
@@ -467,13 +544,15 @@ def reparse_resume(resume_id):
 
 # Flip the incomplete to complete
 @resume_bp.route("/resume/<resume_id>/set_complete", methods=["POST"])
+@require_firebase_auth
 def set_complete(resume_id):
     if not ObjectId.is_valid(resume_id):
         return jsonify({"error": "Invalid resume ID"}), 400
+    
     data = request.get_json() or {}
     flag = bool(data.get("isComplete", True))
     result = biography_collection.update_one(
-        {"_id": ObjectId(resume_id)},
+        {"_id": ObjectId(resume_id), "user_id": request.user_id},
         {"$set": {"isComplete": flag}}
     )
     if result.matched_count == 0:
@@ -481,9 +560,14 @@ def set_complete(resume_id):
     return jsonify({"message": f"isComplete set to {flag}"}), 200
 
 @resume_bp.route("/resume/resumes", methods=["GET"])
+@require_firebase_auth
 def list_resumes():
     status = request.args.get("status")
-    query = {"name": {"$exists": True, "$nin": ["", None]}, "isComplete": {"$ne": True}}
+    query = {
+        "name": {"$exists": True, "$nin": ["", None]},
+        "isComplete": {"$ne": True},
+        "user_id": request.user_id # Ensure the user owns these resumes
+    }
     if status == "complete":
         query["isComplete"] = True
     elif status == "incomplete":
@@ -496,11 +580,15 @@ def list_resumes():
     return jsonify(results), 200
 
 @resume_bp.route("/resume/<resume_id>", methods=["DELETE"])
+@require_firebase_auth
 def delete_resume(resume_id):
     if not ObjectId.is_valid(resume_id):
         return jsonify({"error": "Invalid resume ID"}), 400
-    
-    result = biography_collection.delete_one({"_id": ObjectId(resume_id)})
+
+    result = biography_collection.delete_one({
+        "_id": ObjectId(resume_id),
+        "user_id": request.user_id
+    })
     if result.deleted_count == 0:
         return jsonify({"error": "Resume not found"}), 404
     return jsonify({"message": "Resume deleted"}), 200

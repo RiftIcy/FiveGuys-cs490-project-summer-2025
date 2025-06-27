@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify, request
+from .auth_utils import require_firebase_auth
 from db import job_ads_collection
 from bson import ObjectId
 from parser.parser import JobAdParser
@@ -7,6 +8,7 @@ from datetime import datetime
 job_ads_bp = Blueprint("job_ads", __name__)
 
 @job_ads_bp.route("/upload_job_ad", methods=["POST"])
+@require_firebase_auth
 def upload_job_ad():
     job_ad_text = request.form.get("job_ad")
 
@@ -20,6 +22,7 @@ def upload_job_ad():
         doc = {
             "job_ad_text": clean_text,
             "uploaded_at": datetime.utcnow(),
+            "user_id": request.user_id,  # Firebase user ID
         }
         result = job_ads_collection.insert_one(doc)
     except Exception as e:
@@ -46,9 +49,13 @@ def upload_job_ad():
     }), 200
 
 @job_ads_bp.route("/job_ads/<id>", methods=["GET"])
+@require_firebase_auth
 def get_job_ad(id):
     try:
-        doc = job_ads_collection.find_one({"_id": ObjectId(id)})
+        doc = job_ads_collection.find_one({
+            "_id": ObjectId(id),
+            "user_id": request.user_id  # Only return user's own job ads
+        })
     except Exception as e:
         return jsonify({"error": f"Invalid ID format: {str(e)}"}), 400
     
@@ -67,9 +74,10 @@ def get_job_ad(id):
     }), 200
 
 @job_ads_bp.route("/job_ads", methods=["GET"])
+@require_firebase_auth
 def list_job_ads():
     try:
-        cursor = job_ads_collection.find().sort("uploaded_at", -1)
+        cursor = job_ads_collection.find({"user_id": request.user_id}).sort("uploaded_at", -1)
         out = []
         for doc in cursor:
             out.append({
@@ -84,6 +92,7 @@ def list_job_ads():
         return jsonify({"error": f"Database error: {str(e)}"}), 500
     
 @job_ads_bp.route("/job_ads/<id>", methods=["DELETE"])
+@require_firebase_auth
 def delete_job_ad(id):
     # validate ObjectId
     try:
@@ -91,7 +100,10 @@ def delete_job_ad(id):
     except Exception as e:
         return jsonify({"error": f"Invalid ID format: {str(e)}"}), 400
 
-    result = job_ads_collection.delete_one({"_id": oid})
+    result = job_ads_collection.delete_one({
+        "_id": oid,
+        "user_id": request.user_id  # Only delete user's own job ads
+    })
     if result.deleted_count == 0:
         return jsonify({"error": "Job ad not found"}), 404
 

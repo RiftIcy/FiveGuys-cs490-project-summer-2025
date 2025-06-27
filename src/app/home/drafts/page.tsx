@@ -15,6 +15,7 @@ import {
   Modal,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
+import { getAuth } from "firebase/auth"; 
 
 interface ResumeSummary {
   _id: string;
@@ -34,18 +35,38 @@ export default function DraftsPage() {
   const [toDelete, setToDelete] = useState<ResumeSummary | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Add helper function
+  const getAuthHeaders = async () => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) throw new Error("User not authenticated");
+    const idToken = await user.getIdToken();
+    return { Authorization: `Bearer ${idToken}` };
+  };
+
   // ─────────────────────────────
   //  Load drafts on mount
   // ─────────────────────────────
   useEffect(() => {
-    fetch("http://localhost:5000/resume/resumes?status=incomplete")
-      .then((r) => {
-        if (!r.ok) throw new Error(`Fetch failed: ${r.status}`);
-        return r.json();
-      })
-      .then(setDrafts)
-      .catch((e) => setError(String(e)))
-      .finally(() => setLoading(false));
+    async function fetchDrafts() {
+      try {
+        const authHeaders = await getAuthHeaders(); // Add this
+        
+        const response = await fetch("http://localhost:5000/resume/resumes?status=incomplete", {
+          headers: authHeaders, // Add this
+        });
+        
+        if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
+        const data = await response.json();
+        setDrafts(data);
+      } catch (err) {
+        setError(String(err));
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchDrafts();
   }, []);
 
   // ─────────────────────────────
@@ -59,19 +80,25 @@ export default function DraftsPage() {
     if (!toDelete) return;
     setDeleting(true);
     try {
+      const authHeaders = await getAuthHeaders(); // Ensure user is authenticated
+
       const res = await fetch(`http://localhost:5000/resume/${toDelete._id}`, {
         method: "DELETE",
+        headers: authHeaders,
       });
+
       if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
       setDrafts((prev) => prev.filter((d) => d._id !== toDelete._id));
       setToDelete(null);
-    } catch (err) {
+    } 
+    catch (err) {
       notifications.show({
         title: "Delete failed",
         message: String(err),
         color: "red",
       });
-    } finally {
+    } 
+    finally {
       setDeleting(false);
     }
   };

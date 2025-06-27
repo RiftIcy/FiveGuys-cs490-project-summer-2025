@@ -55,6 +55,7 @@ import {
 import SortableJobCard from "@/components/ui/SortableJobCard";
 import SortableEducationCard from "@/components/ui/SortableEducationCard";
 import { CSS } from "@dnd-kit/utilities";
+import { getAuth } from "firebase/auth";
 
 export interface ResumeInfoProps {
   data: {
@@ -340,6 +341,16 @@ function SortableCategory({
 }
 
 export default function ResumeInfo({ data }: ResumeInfoProps) {
+  const getAuthHeaders = async () => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+    const token = await user.getIdToken();
+    return { Authorization: `Bearer ${token}` };
+  };
+
   //Flag to decide if a resume is complete
   const [savingContinue, setSavingContinue] = useState(false);
 
@@ -522,6 +533,10 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
         `http://localhost:5000/api/reparse-history/${data._id}`,
         {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(await getAuthHeaders()),
+          },
         }
       );
       if (!response.ok) {
@@ -648,7 +663,10 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
         `http://localhost:5000/resume/${data._id}/update_contact`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            ...(await getAuthHeaders()),
+          },
           body: JSON.stringify({ emails: cleanedEmails }),
         }
       );
@@ -757,7 +775,10 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
         `http://localhost:5000/resume/${data._id}/update_phone`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            ...(await getAuthHeaders()),
+          },
           body: JSON.stringify({ phones: cleanedPhones }),
         }
       );
@@ -804,7 +825,10 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
         `http://localhost:5000/resume/${data._id}/update_objective`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(await getAuthHeaders()),
+          },
           body: JSON.stringify({ career_objective: trimmed }),
         }
       );
@@ -1002,7 +1026,10 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
         `http://localhost:5000/resume/${data._id}/update_skills`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(await getAuthHeaders()),
+          },
           body: JSON.stringify({ skills: cleanedSkillsState }),
         }
       );
@@ -1139,7 +1166,10 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
 
       const response = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(await getAuthHeaders()),
+        },
         body: JSON.stringify(payload),
       });
 
@@ -1222,7 +1252,10 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
         `http://localhost:5000/resume/${data._id}/set_jobs`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(await getAuthHeaders()),
+          },
           body: JSON.stringify({ jobs: jobsToSave.map(canonicalizeJob) }),
         }
       );
@@ -1275,6 +1308,10 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
         `http://localhost:5000/resume/${data._id}/delete_job/${index}`,
         {
           method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            ...(await getAuthHeaders()),
+          },
         }
       );
 
@@ -1363,7 +1400,10 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
 
     const res = await fetch(endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(await getAuthHeaders()),
+      },
       body: JSON.stringify(payload),
     });
     const result = await res.json();
@@ -1420,7 +1460,10 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
       `http://localhost:5000/resume/${data._id}/set_educations`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(await getAuthHeaders()),
+        },
         body: JSON.stringify({ educations: toSave.map(canonicalizeEdu) }),
       }
     );
@@ -1450,7 +1493,13 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
     try {
       const res = await fetch(
         `http://localhost:5000/resume/${data._id}/delete_education/${idx}`,
-        { method: "DELETE" }
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            ...(await getAuthHeaders()),
+          },
+        }
       );
       const js = await res.json();
       if (!res.ok) {
@@ -1698,7 +1747,10 @@ export default function ResumeInfo({ data }: ResumeInfoProps) {
     try {
       await fetch(`http://localhost:5000/resume/${data._id}/set_complete`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(await getAuthHeaders()),
+        },
         body: JSON.stringify({ isComplete: true }),
       });
       router.push("/home/completed_forms");

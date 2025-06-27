@@ -4,27 +4,40 @@ import React, { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Container, Title, Textarea, Group, Button, Loader } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
+import { getAuth } from "firebase/auth";
 
 export default function JobPostingPage() {
     const searchParams = useSearchParams();
     const resumeId = searchParams.get("resumeId");
     const router = useRouter();
 
+    // Ensure user is authenticated
+    const getAuthHeaders = async () => {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) throw new Error("User not authenticated");
+        const idToken = await user.getIdToken();
+        return { Authorization: `Bearer ${idToken}` };
+    };
+
+
     const [jobText, setJobText] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
     const handleSubmit = async() => {
-        const notifId = notifications.show({loading: true, title: "Submitting…", message: "Your job ad is being uploaded", autoClose: 2000});
+        const notifId = notifications.show({loading: true, title: "Submitting…", message: "Your job ad is being uploaded", autoClose: false, withCloseButton: false});
 
         setSubmitting(true);
 
-        // Build form for the backend
-        const formData = new FormData();
-        formData.append("job_ad", jobText);
-
         try {
+            const authHeaders = await getAuthHeaders(); // Get auth headers
+            
+            const formData = new FormData();
+            formData.append("job_ad", jobText);
+
             const response = await fetch("http://localhost:5000/upload_job_ad", {
                 method: "POST",
+                headers: authHeaders,
                 body: formData,
             });
 
@@ -34,10 +47,10 @@ export default function JobPostingPage() {
             }
             // 200
             setJobText("");
-            notifications.update({id: notifId, title: "Job Uploaded", message: payload.message, color: "teal", autoClose: 3000, withCloseButton: true});
+            notifications.update({id: notifId, loading: false, title: "Job Uploaded", message: payload.message, color: "teal", autoClose: 3000, withCloseButton: true});
         }
         catch(err: any) {
-            notifications.update({id: notifId, title: "Upload failed", message: err.message, color: "red", autoClose: 4000, withCloseButton: true});
+            notifications.update({id: notifId, loading: false, title: "Upload failed", message: err.message, color: "red", autoClose: 4000, withCloseButton: true});
         }
         finally {
             setSubmitting(false);

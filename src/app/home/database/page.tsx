@@ -18,6 +18,7 @@ import {
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useRouter } from "next/navigation";
+import { getAuth } from "firebase/auth";
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -47,25 +48,39 @@ export default function ResumeDatabasePage() {
   // Fetch uploads
   // ────────────────────────────────────────────────────────────
   useEffect(() => {
-    fetch("http://localhost:5000/uploads")
-      .then((res) => {
-        if (!res.ok) throw new Error(res.statusText);
-        return res.json();
-      })
-      .then((raw: any[]) => {
-        setUploads(
-          raw.map((d) => ({
-            id: d.id,
-            displayName: d.filename || d.snippet || "(untitled)",
-            snippet: d.snippet,
-            hasText: Boolean(d.hasText),
-            uploadedAt: d.uploadedAt,
-          }))
-        );
-      })
-      .catch((err) => console.error("Failed to load uploads:", err))
-      .finally(() => setLoading(false));
-  }, []);
+      const fetchUploads = async () => {
+        try {
+          const auth = getAuth();
+          const user = auth.currentUser;
+          if (!user) throw new Error("User not authenticated");
+          const idToken = await user.getIdToken();
+
+          const res = await fetch("http://localhost:5000/uploads", {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          });
+          if (!res.ok) throw new Error(res.statusText);
+          const raw = await res.json();
+          setUploads(
+            raw.map((d: any) => ({
+              id: d.id,
+              displayName: d.filename || d.snippet || "(untitled)",
+              snippet: d.snippet,
+              hasText: Boolean(d.hasText),
+              uploadedAt: d.uploadedAt,
+            }))
+          );
+        } 
+        catch (err) {
+          console.error("Failed to load uploads:", err);
+        } 
+        finally {
+          setLoading(false);
+        }
+      };
+      fetchUploads();
+    }, []);
 
   // ────────────────────────────────────────────────────────────
   // Helpers
@@ -95,8 +110,16 @@ export default function ResumeDatabasePage() {
     });
 
     try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) throw new Error("User not authenticated");
+      const idToken = await user.getIdToken();
+
       const res = await fetch(`http://localhost:5000/uploads/${id}`, {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
       });
       if (!res.ok) throw new Error(await res.text());
 
@@ -290,9 +313,17 @@ export default function ResumeDatabasePage() {
             });
 
             try {
+              const auth = getAuth();
+              const user = auth.currentUser;
+              if (!user) throw new Error("User not authenticated");
+              const idToken = await user.getIdToken();
+
               const res = await fetch("http://localhost:5000/generate_resume", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${idToken}`,
+                 },
                 body: JSON.stringify(body),
               });
               const data = await res.json();

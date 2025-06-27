@@ -5,6 +5,7 @@ import { Container, Paper, Title, TextInput, Textarea, Group, Button, Stack, Loa
 import { notifications } from '@mantine/notifications';
 import { IconCheck, IconX, IconUpload } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
+import { getAuth } from "firebase/auth";
 
 export default function FileUploadForm() {
     const router = useRouter();
@@ -51,9 +52,18 @@ export default function FileUploadForm() {
         if (biographyText.trim()) formData.append("biography", biographyText.trim());
 
         try {
+            // Get Firebase ID token
+            const auth = getAuth();
+            const user = auth.currentUser;
+            if (!user) throw new Error("User not authenticated");
+            const idToken = await user.getIdToken();
+
             const response = await fetch("http://localhost:5000/upload", {
                 method: "POST",
                 body: formData,
+                headers: {
+                    Authorization: `Bearer ${idToken}`,
+                },
             });
             const data = await response.json();
 

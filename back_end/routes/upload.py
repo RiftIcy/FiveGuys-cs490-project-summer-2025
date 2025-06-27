@@ -4,7 +4,8 @@ from bson import ObjectId
 from datetime import datetime
 import tempfile, os
 from parser.extractors import extract_text
-
+from .auth_utils import require_firebase_auth
+from .firebase_admin_init import auth
 
 # Define the Blueprint
 upload_bp = Blueprint("upload", __name__)
@@ -22,6 +23,7 @@ def make_snippet(text: str, max_len: int = PREVIEW_LEN) -> str:
 
 # POST /upload  ─ add new entry
 @upload_bp.route("/upload", methods=["POST"])
+@require_firebase_auth
 def upload():
     file = request.files.get("file")
     biography_text = request.form.get("biography")
@@ -32,6 +34,7 @@ def upload():
     doc = {
         "uploadedAt": datetime.utcnow(),
         "isComplete": False,
+        "user_id": request.user_id,  # Firebase user ID
     }
 
     # --------  A) File upload  ----------------------------------
@@ -89,12 +92,17 @@ def upload():
     return jsonify({"message": "Upload successful.", "id": str(result.inserted_id)}), 200
 
 @upload_bp.route("/resume/<id>", methods=["GET"])
+@require_firebase_auth
 def get_data(id):
     try:
-        doc = biography_collection.find_one({"_id": ObjectId(id)})
-    except Exception as e:
-        return jsonify({"error": f"Invalid ID format: {str(e)}"}), 400
-    
+        oid = ObjectId(id)
+    except Exception:
+        return jsonify({"error": "Invalid ID format"}), 400
+
+    doc = biography_collection.find_one({
+        "_id": oid, 
+        "user_id": request.user_id
+    })
     if not doc:
         return jsonify({"error": "Document not found"}), 404
     
@@ -111,9 +119,10 @@ def get_data(id):
 # GET /uploads  – list all entries
 # ───────────────────────────────
 @upload_bp.route("/uploads", methods=["GET"])
+@require_firebase_auth
 def list_uploads():
     cursor = biography_collection.find(
-        {"createdFrom": {"$exists": False}},
+        {"createdFrom": {"$exists": False}, "user_id": request.user_id},
         {
             "filename": 1,
             "biography_text": 1,   # kept for hasText flag
@@ -138,13 +147,18 @@ def list_uploads():
 # DELETE /uploads/<id>  – remove
 # ───────────────────────────────
 @upload_bp.route("/uploads/<id>", methods=["DELETE"])
+@require_firebase_auth
 def delete_upload(id):
     try:
         oid = ObjectId(id)
     except Exception:
         return jsonify({"error": "Invalid ID"}), 400
 
-    result = biography_collection.delete_one({"_id": oid})
+    result = biography_collection.delete_one({
+        "_id": oid,
+        "user_id": request.user_id # Only allow deleting your own uploads
+    })
+
     if result.deleted_count == 0:
         return jsonify({"error": "Upload not found"}), 404
 
@@ -154,6 +168,7 @@ def delete_upload(id):
 # POST /generate_resume  – Create Form Data
 # ─────────────────────────────────────────
 @upload_bp.route("/generate_resume", methods=["POST"])
+@require_firebase_auth
 def generate_resume():
     data = request.get_json(silent=True) or {}
 
@@ -166,11 +181,14 @@ def generate_resume():
     sources = []
     for _id in ids:
         try:
-            doc = biography_collection.find_one({"_id": ObjectId(_id)})
+            doc = biography_collection.find_one({
+                "_id": ObjectId(_id),
+                "user_id": request.user_id  # Only allow user's own uploads
+        })
         except Exception:
             return jsonify({"error": f"Invalid upload id: {_id}"}), 400
         if not doc:
-            return jsonify({"error": f"Upload not found: {_id}"}), 404
+            return jsonify({"error": f"Upload not found or not authorized: {_id}"}), 404
         sources.append(doc)
 
     # 2) Concatenate text for LLM
@@ -206,6 +224,7 @@ def generate_resume():
         "uploadedAt": datetime.utcnow(),
         "parse_result": parse_result,
         "isComplete": False,
+        "user_id": request.user_id,  # Associate with Firebase user
     }
     new_id = biography_collection.insert_one(new_doc).inserted_id
 

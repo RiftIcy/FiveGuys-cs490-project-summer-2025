@@ -51,3 +51,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+
+# Firebase service account key (DO NOT COMMIT)
+resume-maker-9e312-firebase-adminsdk-fbsvc-3f5eb88963.json
+*firebase-adminsdk*.json

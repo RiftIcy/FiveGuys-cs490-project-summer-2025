@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Container, Title, Loader, Text, Table, ScrollArea, Group, Button, Stack, Collapse, Modal, Tooltip } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useRouter } from "next/navigation";
+import { getAuth } from "firebase/auth";
 
 interface JobAd {
     _id: string;
@@ -32,17 +33,38 @@ export default function JobAdsPage() {
     const [isDeleting, setIsDeleting] = useState(false)
     const router = useRouter();
 
+    // Ensure user is authenticated
+    const getAuthHeaders = async () => {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) throw new Error("User not authenticated");
+      const idToken = await user.getIdToken();
+      return { Authorization: `Bearer ${idToken}` };
+    };
+
     useEffect(() => {
-        fetch("http://localhost:5000/job_ads").then((response) => {
-            if (!response.ok) {
-                throw new Error(response.statusText);
+        async function fetchJobAds() {
+            try {
+                const authHeaders = await getAuthHeaders(); // Add this
+                
+                const response = await fetch("http://localhost:5000/job_ads", {
+                    headers: authHeaders, // Add this
+                });
+                
+                if (!response.ok) {
+                    throw new Error(response.statusText);
+                }
+                
+                const data: JobAd[] = await response.json();
+                setAds(data);
+            } catch (err) {
+                console.error("Failed to load job ads:", err);
+            } finally {
+                setLoading(false);
             }
-            return response.json();
-        }).then((data: JobAd[]) => {
-            setAds(data);
-        }).catch((err) => {
-            console.error("Failed to load job ads:", err);
-        }).finally(() => setLoading(false));
+        }
+        
+        fetchJobAds(); // Call the async function
     }, []);
 
     const handleDelete = async (id: string) => {
@@ -51,8 +73,11 @@ export default function JobAdsPage() {
       notifications.show({id: notifId, loading: true, title: "Deleting job ad", message: "Please wait…", autoClose: false, withCloseButton: false});
 
       try {
+        const authHeaders = await getAuthHeaders(); // Ensure user is authenticated
+
         const response = await fetch(`http://localhost:5000/job_ads/${id}`, {
           method: "DELETE",
+          headers: authHeaders,
         });
         if (!response.ok) throw new Error(await response.text());
 
