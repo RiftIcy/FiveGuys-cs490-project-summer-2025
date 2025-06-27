@@ -6,6 +6,7 @@ import tempfile, os
 from parser.extractors import extract_text
 from .auth_utils import require_firebase_auth
 from .firebase_admin_init import auth
+import base64
 
 # Define the Blueprint
 upload_bp = Blueprint("upload", __name__)
@@ -91,6 +92,7 @@ def upload():
 
     return jsonify({"message": "Upload successful.", "id": str(result.inserted_id)}), 200
 
+
 @upload_bp.route("/resume/<id>", methods=["GET"])
 @require_firebase_auth
 def get_data(id):
@@ -114,6 +116,7 @@ def get_data(id):
         "id": str(doc["_id"]),
         "parse_result": parse_result
     }), 200
+
 
 # ───────────────────────────────
 # GET /uploads  – list all entries
@@ -142,6 +145,44 @@ def list_uploads():
             "uploadedAt": ts.isoformat(),
         })
     return jsonify(out), 200
+
+# ───────────────────────────────
+# GET /uploads/<id>/content – get single upload with file content
+# ───────────────────────────────
+@upload_bp.route("/uploads/<id>/content", methods=["GET"])
+@require_firebase_auth
+def get_upload(id):
+    try:
+        oid = ObjectId(id)
+    except Exception:
+        return jsonify({"error": "Invalid ID format"}), 400
+
+    doc = biography_collection.find_one({
+        "_id": oid,
+        "user_id": request.user_id  # Only allow user's own uploads
+    })
+
+    if not doc:
+        return jsonify({"error": "Document not found"}), 404
+    
+
+    # Convert bytes to base64 for JSON serialization
+    file_content = doc.get("file_content")
+    if file_content and isinstance(file_content, bytes):
+        file_content = base64.b64encode(file_content).decode('utf-8')
+
+    # Return the full document (including file_content for preview)
+    result = {
+        "_id": str(doc["_id"]),
+        "filename": doc.get("filename"),
+        "file_content": file_content,
+        "file_type": doc.get("file_type"),
+        "biography_text": doc.get("biography_text"),
+        "snippet": doc.get("snippet"),
+        "uploadedAt": doc.get("uploadedAt", datetime.utcnow()).isoformat(),
+    }
+    
+    return jsonify(result), 200
 
 # ───────────────────────────────
 # DELETE /uploads/<id>  – remove
@@ -229,3 +270,4 @@ def generate_resume():
     new_id = biography_collection.insert_one(new_doc).inserted_id
 
     return jsonify({"resume_id": str(new_id)}), 200
+
