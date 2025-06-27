@@ -106,8 +106,30 @@ export default function ResumeDatabasePage() {
       if (data.file_type === 'docx' && data.file_content) {
         try {
           const arrayBuffer = Uint8Array.from(atob(data.file_content), c => c.charCodeAt(0)).buffer;
-          const result = await mammoth.convertToHtml({ arrayBuffer });
-          
+
+          const result = await mammoth.convertToHtml(
+            { arrayBuffer },
+            {
+              styleMap: [
+                "p[style-name='Heading 1'] => h1:fresh",
+                "p[style-name='Heading 2'] => h2:fresh", 
+                "p[style-name='Heading 3'] => h3:fresh",
+                "p[style-name='Title'] => h1:fresh",
+                "p[style-name='Subtitle'] => h2:fresh",
+                "b => strong",
+                "i => em",
+              ],
+              includeDefaultStyleMap: true,
+              convertImage: mammoth.images.imgElement(function(image: any) {
+                return image.read("base64").then(function(imageBuffer: string) {
+                  return {
+                    src: "data:" + image.contentType + ";base64," + imageBuffer
+                  };
+                });
+              })
+            }
+          );
+
           setFileData(prev => ({
             ...prev,
             [id]: {
@@ -117,7 +139,8 @@ export default function ResumeDatabasePage() {
               isFormatted: true,
             }
           }));
-        } catch (error) {
+        } 
+        catch (error) {
           console.error("DOCX conversion failed:", error);
           // Fall back to regular handling
           setFileData(prev => ({
@@ -129,7 +152,8 @@ export default function ResumeDatabasePage() {
             }
           }));
         }
-      } else {
+      } 
+      else {
         // Regular handling for other file types
         setFileData(prev => ({
           ...prev,
@@ -267,10 +291,19 @@ export default function ResumeDatabasePage() {
                   border: '1px solid #dee2e6',
                   padding: '1rem',
                   background: 'white',
-                  borderRadius: '4px'
+                  borderRadius: '4px',
+                  whiteSpace: 'pre-wrap',
+                  fontFamily: 'Times, "Times New Roman", serif',
+                  fontSize: '14px',
+                  lineHeight: '1.6',
+                  color: '#333',
+                  maxWidth: '100%',
+                  overflowWrap: 'break-word',
+                  wordWrap: 'break-word',
+                  tabSize: 4,
                 }}
                 dangerouslySetInnerHTML={{ 
-                  __html: file.htmlContent.slice(0, 2000) + (file.htmlContent.length > 2000 ? '<p><em>... (click to view full document)</em></p>' : '') 
+                  __html: `<div style="white-space: pre-wrap; tab-size: 4;">${file.htmlContent.slice(0, 2000) + (file.htmlContent.length > 2000 ? '<p><em>... (click to view full document)</em></p>' : '')}</div>`
                 }}
               />
             </Stack>
@@ -376,14 +409,73 @@ export default function ResumeDatabasePage() {
               <div 
                 style={{ 
                   background: 'white',
-                  padding: '2rem',
+                  padding: '3rem',
                   border: '1px solid #dee2e6',
                   borderRadius: '8px',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                  fontFamily: 'Georgia, "Times New Roman", serif',
-                  lineHeight: '1.6'
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  fontFamily: 'Times, "Times New Roman", serif',
+                  fontSize: '16px',
+                  lineHeight: '1.8',
+                  color: '#333',
+                  minHeight: '600px',
+                  maxWidth: '100%',
+                  width: '100%',
+                  overflowWrap: 'break-word',
+                  wordWrap: 'break-word',
+                  hyphens: 'auto',
+                  overflow: 'hidden',
                 }}
-                dangerouslySetInnerHTML={{ __html: file.htmlContent }}
+                dangerouslySetInnerHTML={{ 
+                  __html: `
+                    <style>
+                      * {
+                        max-width: 100% !important;
+                        overflow-wrap: break-word !important;
+                        word-wrap: break-word !important;
+                        box-sizing: border-box !important;
+                      }
+                      p, h1, h2, h3, h4, h5, h6, li, div, span {
+                        max-width: 100% !important;
+                        overflow-wrap: break-word !important;
+                      }
+                      /* Preserve indentation and spacing */
+                      .docx-content {
+                        white-space: pre-wrap !important;
+                        tab-size: 4 !important;
+                      }
+                      /* Handle lists with proper indentation */
+                      ul, ol {
+                        padding-left: 2.5em !important;
+                        margin: 1em 0 !important;
+                      }
+                      li {
+                        margin-bottom: 0.5em !important;
+                        line-height: 1.6 !important;
+                      }
+                      /* Preserve paragraph indentation */
+                      p {
+                        margin-bottom: 1.2em !important;
+                        line-height: 1.8 !important;
+                        text-indent: inherit !important;
+                      }
+                    </style>
+                    <div class="docx-content">
+                      ${file.htmlContent
+                        // Add better paragraph spacing
+                        .replace(/<p>/g, '<p style="margin-bottom: 1.2em; line-height: 1.8; max-width: 100%; overflow-wrap: break-word;">')
+                        // Style headers better
+                        .replace(/<h1>/g, '<h1 style="font-size: 24px; font-weight: bold; margin: 2em 0 1em 0; color: #2c3e50; max-width: 100%; overflow-wrap: break-word;">')
+                        .replace(/<h2>/g, '<h2 style="font-size: 20px; font-weight: bold; margin: 1.8em 0 0.8em 0; color: #34495e; max-width: 100%; overflow-wrap: break-word;">')
+                        .replace(/<h3>/g, '<h3 style="font-size: 18px; font-weight: bold; margin: 1.5em 0 0.6em 0; color: #34495e; max-width: 100%; overflow-wrap: break-word;">')
+                        // Better list styling
+                        .replace(/<ul>/g, '<ul style="margin: 1em 0; padding-left: 2.5em; max-width: 100%;">')
+                        .replace(/<li>/g, '<li style="margin-bottom: 0.5em; line-height: 1.6; max-width: 100%; overflow-wrap: break-word;">')
+                        // Emphasize strong/bold text
+                        .replace(/<strong>/g, '<strong style="font-weight: 700; max-width: 100%; overflow-wrap: break-word;">')
+                      }
+                    </div>
+                  `
+                }}
               />
             </div>
           </ScrollArea>
