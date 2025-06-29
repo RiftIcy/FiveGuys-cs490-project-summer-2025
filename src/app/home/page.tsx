@@ -27,7 +27,7 @@ export default function HomePage() {
         <Card shadow="sm" padding="lg" radius="md" withBorder onClick={() => router.push('/home/resume_builder')} style={{cursor:"pointer", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between"}}>
           <Card.Section component="span">
             <Image
-              src="https://tse1.mm.bing.net/th?id=OIP.tYoZDaFuXWkTOUzy5sxUWAHaHa&w=474&h=474&c=7" // Find image for Resume Builder
+              src="https://tse1.mm.bing.net/th?id=OIP.tYoZDaFuXWkTOUzy5sxUWAHaHa&w=474&h=474&c=7"
               height={160}
               alt="Upload Data"
             />
@@ -46,7 +46,7 @@ export default function HomePage() {
             <Card shadow="sm" padding="lg" radius="md" withBorder onClick={() => router.push("/home/drafts")} style={{cursor:"pointer", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between"}}>
               <Card.Section>
                 <Image
-                  src="https://img.freepik.com/premium-vector/resume-concept-man-makes-resume-vector-illustration-flat_186332-1030.jpg?w=996" // Find image for Resume Builder
+                  src="https://img.freepik.com/premium-vector/resume-concept-man-makes-resume-vector-illustration-flat_186332-1030.jpg?w=996"
                   height={160}
                   alt="Continue Editing"
                 />
