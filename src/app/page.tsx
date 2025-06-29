@@ -28,7 +28,7 @@ export default function LandingPage() {
   return (
     <div 
       style={{
-        backgroundImage: 'url(/resume_builder_image.png)',
+        backgroundImage: 'url(/LandingPage1.jpg)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
@@ -37,7 +37,6 @@ export default function LandingPage() {
       }}
     >
       <Overlay opacity={0.7} color="#000" zIndex={1} />
-      
       <Container 
         size="md" 
         h="100vh" 
@@ -52,10 +51,10 @@ export default function LandingPage() {
         {/* Hero Section */}
         {!showForm ? (
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <Group justify="center" mb="md">
-              <Image src="/logoV1.png" alt="Resume Fox Logo" width={60} height={60}/>
-              <Title order={1} size="3rem" fw={700} c="white">Resume Fox</Title>
-            </Group>
+            <Image src="/logoonly.png" alt="Resume Fox Logo" width={160} height={160} style={{ display: 'block', margin: '0 auto 0.25rem auto' }} />
+            <Title order={1} style={{ fontSize: '5rem', fontWeight: 700, marginBottom: '0.5rem', color: 'white' }}>
+              Resume Fox
+            </Title>
             <Title order={2} size="1.8rem" c="white" mb="sm">
               Create Professional Resumes in Minutes
             </Title>
@@ -72,10 +71,11 @@ export default function LandingPage() {
                   setView("login");
                 }}
                 style={{
-                  background: 'linear-gradient(45deg, #228be6, #339af0)',
+                  background: '#3782FF',
                   color: 'white',
                   padding: '12px 32px',
-                  fontSize: '16px'
+                  fontSize: '16px',
+                  border: 'none'
                 }}
               >
                 Get Started
@@ -102,7 +102,7 @@ export default function LandingPage() {
         ) : (
           <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
             <Group justify="center" mb="sm">
-              <Image src="/logoV1.png" alt="Resume Fox Logo" width={40} height={40}/>
+              <Image src="/logoonly.png" alt="Resume Fox Logo" width={40} height={40}/>
               <Title order={1} size="2rem" fw={700} c="white">Resume Fox</Title>
             </Group>
             <Button 

@@ -65,7 +65,7 @@ export default function HomePage() {
             <Card shadow="sm" padding="lg" radius="md" withBorder onClick={() => router.push("/home/completed_resumes")} style={{cursor:"pointer", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between"}}>
               <Card.Section>
                 <Image
-                  src="https://static.vecteezy.com/system/resources/thumbnails/021/453/345/original/4k-stand-out-resume-or-cv-animation-young-smart-businessman-holding-his-resume-or-cv-printed-paper-present-his-working-profile-for-hiring-free-video.jpg" // Find image for Resume Builder
+                  src="https://static.vecteezy.com/system/resources/thumbnails/021/453/345/original/4k-stand-out-resume-or-cv-animation-young-smart-businessman-holding-his-resume-or-cv-printed-paper-present-his-working-profile-for-hiring-free-video.jpg"
                   height={160}
                   alt="Completed Resumes"
                 />
@@ -84,7 +84,7 @@ export default function HomePage() {
             <Card shadow="sm" padding="lg" radius="md" withBorder style={{cursor:"pointer", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between"}}>
               <Card.Section>
                 <Image
-                  src="https://tse4.mm.bing.net/th?id=OIP.HO5958-f9zHlPvSSI5uDcAHaHa&w=474&h=474&c=7" // Find image for Resume Builder
+                  src="https://tse4.mm.bing.net/th?id=OIP.HO5958-f9zHlPvSSI5uDcAHaHa&w=474&h=474&c=7"
                   height={160}
                   alt="About Us"
                 />
