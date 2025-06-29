@@ -213,7 +213,37 @@
 /* Make Mantine Paper components darker */
 .dark.night-sky .mantine-Paper-root {
   background-color: var(--card) !important;
-  border-color: var(--border) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Add white outlines to dragable components (jobs, education, skills) */
+.dark.night-sky .mantine-Card-root,
+.dark.night-sky .mantine-Paper-root,
+.dark.night-sky [data-sortable="true"],
+.dark.night-sky .sortable-item {
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Add white outlines to skill badges and interactive elements */
+.dark.night-sky .mantine-Badge-root,
+.dark.night-sky .skill-badge,
+.dark.night-sky .draggable-skill {
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Enhanced outline on hover for better interactivity */
+.dark.night-sky .mantine-Card-root:hover,
+.dark.night-sky .mantine-Paper-root:hover,
+.dark.night-sky [data-sortable="true"]:hover {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Special styling for dragging state */
+.dark.night-sky .mantine-Card-root[data-dragging="true"],
+.dark.night-sky .mantine-Paper-root[data-dragging="true"] {
+  border-color: rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1) !important;
 }
 
 @layer base {
