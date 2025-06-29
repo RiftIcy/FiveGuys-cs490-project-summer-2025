@@ -27,7 +27,7 @@ export default function HomePage() {
         <Card shadow="sm" padding="lg" radius="md" withBorder onClick={() => router.push('/home/resume_builder')} style={{cursor:"pointer", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between"}}>
           <Card.Section component="span">
             <Image
-              src="https://tse1.mm.bing.net/th?id=OIP.tYoZDaFuXWkTOUzy5sxUWAHaHa&w=474&h=474&c=7"
+              src="/upload.png"
               height={160}
               alt="Upload Data"
             />
@@ -46,7 +46,7 @@ export default function HomePage() {
             <Card shadow="sm" padding="lg" radius="md" withBorder onClick={() => router.push("/home/drafts")} style={{cursor:"pointer", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between"}}>
               <Card.Section>
                 <Image
-                  src="https://img.freepik.com/premium-vector/resume-concept-man-makes-resume-vector-illustration-flat_186332-1030.jpg?w=996"
+                  src="/continue_editing.png"
                   height={160}
                   alt="Continue Editing"
                 />
@@ -65,7 +65,7 @@ export default function HomePage() {
             <Card shadow="sm" padding="lg" radius="md" withBorder onClick={() => router.push("/home/completed_resumes")} style={{cursor:"pointer", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between"}}>
               <Card.Section>
                 <Image
-                  src="https://static.vecteezy.com/system/resources/thumbnails/021/453/345/original/4k-stand-out-resume-or-cv-animation-young-smart-businessman-holding-his-resume-or-cv-printed-paper-present-his-working-profile-for-hiring-free-video.jpg"
+                  src="completed_cv.jpg"
                   height={160}
                   alt="Completed Resumes"
                 />
@@ -84,7 +84,7 @@ export default function HomePage() {
             <Card shadow="sm" padding="lg" radius="md" withBorder style={{cursor:"pointer", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between"}}>
               <Card.Section>
                 <Image
-                  src="https://tse4.mm.bing.net/th?id=OIP.HO5958-f9zHlPvSSI5uDcAHaHa&w=474&h=474&c=7"
+                  src="about_us.png"
                   height={160}
                   alt="About Us"
                 />

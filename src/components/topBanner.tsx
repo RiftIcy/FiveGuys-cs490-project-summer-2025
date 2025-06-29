@@ -13,6 +13,7 @@ import {
   useMantineTheme,
   Box,
 } from "@mantine/core";
+import Image from "next/image";
 
 interface TopBannerProps {
   toggleSidePanel: () => void;
@@ -81,7 +82,8 @@ export default function TopBanner({ toggleSidePanel }: TopBannerProps) {
         <Title order={4}>{pageTitle}</Title>
       </Group>
 
-      <Title order={3}>Five Guys</Title>
+      {/* Replace Five Guys text with logo */}
+      <Image src="/fulllogo.png" alt="Resume Fox Logo" width={140} height={40} style={{ display: 'block' }} />
 
       <Group align="center">
         <Menu withArrow withinPortal position="bottom-end">
