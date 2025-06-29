@@ -29,10 +29,10 @@ import {
   IconBriefcase,
   IconSpeakerphone 
 } from '@tabler/icons-react';
-import { Code, Group } from '@mantine/core';
-import { MantineLogo } from '@mantinex/mantine-logo';
+import { Group, Transition } from '@mantine/core';
 import classes from '@/styles/sidePanel.module.css';
 import { ClipboardCheckIcon, UploadIcon } from 'lucide-react';
+import Image from 'next/image';
 
 interface SidePanelProps {
   hidden?: boolean;
@@ -47,7 +47,6 @@ interface MenuItem {
 
 export default function SidePanel({ hidden }: SidePanelProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const [active, setActive] = useState('Main');
 
   // define the menu items in the desired order
@@ -74,11 +73,32 @@ export default function SidePanel({ hidden }: SidePanelProps) {
   
 
 return (
-    <nav className={classes.navbar} style={{ display: hidden ? "none" : undefined }}>
-      <div className={classes.navbarMain}>
-        <Group className={classes.header} justify="space-between">
-          <Code fw={700} />
-        </Group>
+    <Transition mounted={!hidden} transition="slide-right" duration={300} timingFunction="ease">
+      {(styles) => (
+        <nav className={classes.navbar} style={styles}>
+          <div className={classes.navbarMain}>
+            <Group className={classes.header} justify="space-between">
+              <div style={{ 
+                width: '100%', 
+                display: 'flex', 
+                alignItems: 'center',
+                paddingLeft: '12px', // Match the padding of menu items
+                marginBottom: 16,
+                marginTop: 8
+              }}>
+                <Image 
+                  src="/logoonly.png" 
+                  alt="Resume Fox Logo" 
+                  width={24} 
+                  height={24} 
+                  style={{ 
+                    display: 'block',
+                    marginRight: '12px' // Match the spacing of icons to text
+                  }} 
+                />
+                <span style={{ fontWeight: 600, fontSize: '14px' }}></span>
+              </div>
+            </Group>
 
         {menuItems.map(({ link, label, icon: Icon, disabled }) => (
           <Link
@@ -112,5 +132,7 @@ return (
         </a>
       </div>
     </nav>
+      )}
+    </Transition>
   );
 }
