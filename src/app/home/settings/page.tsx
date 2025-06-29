@@ -21,7 +21,7 @@ import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { getFriendlyFirebaseErrorMessage } from "@/utils/firebaseErrorHandler";
 
-type ThemeType = "light" | "dark" | "system";
+type ThemeType = "light" | "dark" | "system" | "night-sky";
 
 export default function SettingsPage() {
     const { theme, setTheme } = useTheme(); // Use the global theme context
@@ -216,6 +216,7 @@ export default function SettingsPage() {
                                             <SelectContent>
                                                 <SelectItem value="light">Light</SelectItem>
                                                 <SelectItem value="dark">Dark</SelectItem>
+                                                <SelectItem value="night-sky">Night Sky</SelectItem>
                                                 <SelectItem value="system">System</SelectItem>
                                             </SelectContent>
                                         </Select>

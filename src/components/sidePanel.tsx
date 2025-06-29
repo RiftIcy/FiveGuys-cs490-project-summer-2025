@@ -60,7 +60,6 @@ export default function SidePanel({ hidden }: SidePanelProps) {
     {link: "/home/job_posting", label: "Job Posting", icon: IconBriefcase},
     {link: "/home/job_ads", label: "Job Ads", icon: IconSpeakerphone},
     { link: "/home/completed_resumes", label: "Completed Resumes", icon: IconClipboardCheckFilled },
-    { link: '/home/settings', label: 'Settings', icon: IconSettings },
   ] as const;
 
   const handleLogout = async (e: React.MouseEvent) => {
@@ -103,6 +102,10 @@ return (
       </div>
 
       <div className={classes.footer}>
+        <Link href="/home/settings" className={classes.link}>
+          <IconSettings className={classes.linkIcon} stroke={1.5} />
+          <span>Settings</span>
+        </Link>
         <a href="#" className={classes.link} onClick={handleLogout}>
           <IconLogout className={classes.linkIcon} stroke={1.5} />
           <span>Logout</span>

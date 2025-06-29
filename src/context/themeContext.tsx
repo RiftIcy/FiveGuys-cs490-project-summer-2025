@@ -1,9 +1,45 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
-import { MantineProvider } from "@mantine/core";
+import { MantineProvider, createTheme, MantineColorsTuple } from "@mantine/core";
 
-type ThemeType = "system" | "light" | "dark";
+type ThemeType = "system" | "light" | "dark" | "night-sky";
+
+// Custom colors for Night Sky theme
+const nightSkyPurple: MantineColorsTuple = [
+  '#e8e5ff',  // lightest - for very light backgrounds
+  '#d0ccff',  
+  '#b8b3ff',  
+  '#a09aff',  
+  '#8881ff',  
+  '#7068ff',  // lighter for less eye strain
+  '#5d54e8',  // primary color - darker and softer
+  '#4a41d1',  // darker
+  '#372eba',  // much darker
+  '#241ba3'   // darkest - for emphasis
+];
+
+const nightSkyTheme = createTheme({
+  colors: {
+    nightSky: nightSkyPurple,
+  },
+  primaryColor: 'nightSky',
+  other: {
+    // Custom CSS variables that match our night-sky theme
+    backgroundColor: 'oklch(0.03 0.02 250)', // Much darker background
+    textColor: 'oklch(0.9 0.03 240)',
+    cardColor: 'oklch(0.06 0.04 255)', // Darker cards
+    borderColor: 'oklch(0.15 0.08 250 / 0.5)', // Darker borders
+  },
+});
+
+const darkTheme = createTheme({
+  primaryColor: 'blue',
+});
+
+const lightTheme = createTheme({
+  primaryColor: 'blue',
+});
 
 interface ThemeContextProps {
     theme: ThemeType;
@@ -74,22 +110,38 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             ? (typeof window !== 'undefined' && window.matchMedia("(prefers-color-scheme: dark)").matches
                 ? "dark"
                 : "light")
+            : theme === "night-sky"
+            ? "dark"
             : theme;
+
+    // Get the appropriate Mantine theme
+    const getMantineTheme = () => {
+        if (theme === "night-sky") {
+            return nightSkyTheme;
+        } else if (resolvedScheme === "dark") {
+            return darkTheme;
+        } else {
+            return lightTheme;
+        }
+    };
 
     useEffect(() => {
         const root = window.document.documentElement;
 
         const applyTheme = (selectedTheme: ThemeType) => {
+            // Remove all theme classes first
+            root.classList.remove("dark", "night-sky");
+            
             if (selectedTheme === "light") {
-                root.classList.remove("dark");
+                // Light theme - no additional classes needed
             } else if (selectedTheme === "dark") {
                 root.classList.add("dark");
+            } else if (selectedTheme === "night-sky") {
+                root.classList.add("dark", "night-sky");
             } else if (selectedTheme === "system") {
                 const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
                 if (prefersDark) {
                     root.classList.add("dark");
-                } else {
-                    root.classList.remove("dark");
                 }
             }
         };
@@ -124,7 +176,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     return (
         <ThemeContext.Provider value={{ theme, setTheme }}>
-            <MantineProvider defaultColorScheme={resolvedScheme} forceColorScheme={resolvedScheme}>
+            <MantineProvider 
+                theme={getMantineTheme()} 
+                defaultColorScheme={resolvedScheme} 
+                forceColorScheme={resolvedScheme}
+            >
                 {children}
             </MantineProvider>
         </ThemeContext.Provider>

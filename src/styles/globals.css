@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant night-sky (&:is(.dark.night-sky *));
 
 @theme inline {
   --color-background: var(--background);
@@ -112,11 +113,121 @@
   --sidebar-ring: oklch(0.553 0.013 58.071);
 }
 
+.dark.night-sky {
+  --background: oklch(0.03 0.02 250); /* Much darker night sky background */
+  --foreground: oklch(0.9 0.03 240); /* Bright blue-white text */
+  --card: oklch(0.06 0.04 255); /* Darker blue-purple for cards */
+  --card-foreground: oklch(0.9 0.03 240);
+  --popover: oklch(0.06 0.04 255);
+  --popover-foreground: oklch(0.9 0.03 240);
+  --primary: oklch(0.45 0.18 270); /* Darker, softer purple primary */
+  --primary-foreground: oklch(0.95 0.01 240);
+  --secondary: oklch(0.08 0.05 260); /* Much darker secondary */
+  --secondary-foreground: oklch(0.9 0.03 240);
+  --muted: oklch(0.08 0.05 260);
+  --muted-foreground: oklch(0.65 0.08 240); /* More colorful muted text */
+  --accent: oklch(0.3 0.15 280); /* Softer purple accent */
+  --accent-foreground: oklch(0.95 0.01 240);
+  --destructive: oklch(0.55 0.25 15); /* Bright red for destructive actions */
+  --border: oklch(0.15 0.08 250 / 0.5); /* Darker borders with slight glow */
+  --input: oklch(0.08 0.05 260); /* Dark input background to match settings */
+  --ring: oklch(0.45 0.18 270); /* Softer focus ring */
+  --chart-1: oklch(0.5 0.3 280); /* Vibrant chart colors */
+  --chart-2: oklch(0.6 0.25 250);
+  --chart-3: oklch(0.7 0.2 220);
+  --chart-4: oklch(0.55 0.28 300);
+  --chart-5: oklch(0.65 0.22 240);
+  --sidebar: oklch(0.04 0.03 250); /* Very dark sidebar */
+  --sidebar-foreground: oklch(0.9 0.03 240);
+  --sidebar-primary: oklch(0.45 0.18 270);
+  --sidebar-primary-foreground: oklch(0.95 0.01 240);
+  --sidebar-accent: oklch(0.08 0.05 260);
+  --sidebar-accent-foreground: oklch(0.9 0.03 240);
+  --sidebar-border: oklch(0.15 0.08 250 / 0.5);
+  --sidebar-ring: oklch(0.45 0.18 270);
+}
+
+/* Override Mantine styles for Night Sky theme */
+.dark.night-sky [data-mantine-color-scheme="dark"] {
+  --mantine-color-body: oklch(0.03 0.02 250);
+  --mantine-color-text: oklch(0.9 0.03 240);
+  --mantine-color-dark-6: oklch(0.06 0.04 255);
+  --mantine-color-dark-7: oklch(0.04 0.03 250);
+  --mantine-color-dark-8: oklch(0.03 0.02 250);
+}
+
+/* Make Mantine inputs match settings page styling */
+.dark.night-sky .mantine-TextInput-input,
+.dark.night-sky .mantine-Textarea-input,
+.dark.night-sky .mantine-Select-input,
+.dark.night-sky .mantine-NumberInput-input,
+.dark.night-sky .mantine-Autocomplete-input {
+  background-color: var(--input) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: var(--foreground) !important;
+}
+
+.dark.night-sky .mantine-TextInput-input:focus,
+.dark.night-sky .mantine-Textarea-input:focus,
+.dark.night-sky .mantine-Select-input:focus,
+.dark.night-sky .mantine-NumberInput-input:focus,
+.dark.night-sky .mantine-Autocomplete-input:focus {
+  border-color: rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Add white borders to regular input elements in Night Sky theme */
+.dark.night-sky input[type="text"],
+.dark.night-sky input[type="email"],
+.dark.night-sky input[type="password"],
+.dark.night-sky input[type="tel"],
+.dark.night-sky input[type="number"],
+.dark.night-sky textarea,
+.dark.night-sky select {
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.dark.night-sky input[type="text"]:focus,
+.dark.night-sky input[type="email"]:focus,
+.dark.night-sky input[type="password"]:focus,
+.dark.night-sky input[type="tel"]:focus,
+.dark.night-sky input[type="number"]:focus,
+.dark.night-sky textarea:focus,
+.dark.night-sky select:focus {
+  border-color: rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Ensure all input elements get the styling regardless of nesting */
+.dark.night-sky input:not([type="submit"]):not([type="button"]):not([type="reset"]) {
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  background-color: var(--input) !important;
+  color: var(--foreground) !important;
+}
+
+.dark.night-sky input:not([type="submit"]):not([type="button"]):not([type="reset"]):focus {
+  border-color: rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Make Mantine Paper components darker */
+.dark.night-sky .mantine-Paper-root {
+  background-color: var(--card) !important;
+  border-color: var(--border) !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground;
+  }
+  
+  /* Ensure Night Sky theme applies to entire page */
+  .dark.night-sky body,
+  .dark.night-sky html {
+    background-color: var(--background) !important;
+    color: var(--foreground) !important;
   }
 }
