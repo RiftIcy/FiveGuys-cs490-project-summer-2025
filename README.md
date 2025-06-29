@@ -64,6 +64,8 @@ NEXT_PUBLIC_FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY\
 MONGO_URI="mongodb+srv://<USERNAME>:<PASSWORD>@<CLUSTER_URL>/<DATABASE_NAME>?retryWrites=true&w=majority&appName=<APP_NAME>"
 
 OPENAI_API_KEY="your-openai-api-key-here"
+
+FIREBASE_ADMINSDK_PATH=/absolute/path/to/your/<your-firebase-adminsdk-file>.json
 ```
 
 > ⚠️ Be sure to replace each value with the actual config from your Firebase project. For the private key, escape each line break with `\n`.
