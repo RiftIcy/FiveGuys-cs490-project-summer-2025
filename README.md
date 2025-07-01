@@ -26,6 +26,7 @@ Install all required Node packages:
 ```bash
 npm install
 npm install mammoth
+poetry install
 ```
 
 ---
