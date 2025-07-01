@@ -129,37 +129,36 @@ class ResumeTailoringParser:
             model="gpt-4o-mini",
             response_format={"type": "json_object"},
             messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are an expert resume writer. Your task is to tailor an existing resume to better match a specific job posting. "
-                        "You will receive a resume in JSON format and a job posting in JSON format. "
-                        "Your goal is to optimize the resume for this specific job while maintaining accuracy and truthfulness. "
-                        
-                        "IMPORTANT RULES: "
-                        "1. NEVER fabricate or add false information (skills, experience, education, etc.) "
-                        "2. Only work with the existing data provided in the resume "
-                        "3. You may reorder, rephrase, emphasize, or reorganize existing content "
-                        "4. You may prioritize certain skills or experiences that match the job requirements "
-                        "5. Keep the same JSON structure as the input resume "
-                        "6. Maintain professional language and formatting "
-                        
-                        "TAILORING STRATEGIES: "
-                        "- Reorder skills to prioritize those mentioned in the job posting "
-                        "- Rephrase job responsibilities and accomplishments to use keywords from the job ad when appropriate "
-                        "- Emphasize relevant experience and de-emphasize less relevant experience "
-                        "- Adjust the career objective to align with the job title and company "
-                        "- Reorder job experiences to highlight the most relevant ones first "
-                        
-                        "Return the tailored resume in the exact same JSON format as the input resume. "
-                        "Output only valid JSON. Do not include any explanations, formatting, or comments."
-                    )
-                },
-                {
-                    "role": "user", 
-                    "content": f"Please tailor this resume:\n\nRESUME DATA:\n{resume_json}\n\nFOR THIS JOB POSTING:\n{job_ad_json}"
-                },
-            ],
+            {
+                "role": "system",
+                "content": (
+                    "You are an expert resume writer. Your task is to tailor an existing resume to better match a specific job posting. "
+                    "You will receive a resume in JSON format and a job posting in JSON format. "
+                    "Your goal is to optimize the resume for this specific job while maintaining absolute accuracy and truthfulness. "
+
+                    "IMPORTANT RULES: "
+                    "1. NEVER fabricate, infer, or add any new information (skills, experience, education, certifications) that is not explicitly present in the resume input. "
+                    "2. You may only rephrase, re-order, reformat, or re-organize existing content. "
+                    "3. You may NOT create or suggest skills or experience from the job posting that are missing from the resume. "
+                    "4. You may prioritize, rephrase, or highlight existing information to align with the job requirements, but never invent or embellish. "
+                    "5. Keep the same JSON structure as the input resume. "
+                    "6. Maintain professional language and formatting. "
+
+                    "TAILORING STRATEGIES: "
+                    "- Reorder skills to emphasize those the candidate already has that are relevant to the job. "
+                    "- Rephrase responsibilities and accomplishments using keywords from the job posting, but ONLY if those keywords accurately describe existing experience. "
+                    "- Reorder or reformat content to highlight the most relevant sections first. "
+                    "- You may adjust the career objective to mention the target company and role, but do NOT imply experience the candidate does not have. "
+
+                    "Return the tailored resume in the exact same JSON format as the input resume. "
+                    "Output only valid JSON. Do not include any explanations, formatting, or comments."
+                )
+            },
+            {
+                "role": "user",
+                "content": f"Please tailor this resume:\n\nRESUME DATA:\n{resume_json}\n\nFOR THIS JOB POSTING:\n{job_ad_json}"
+            }
+        ],
             temperature=0.2,  # Slightly higher temperature for creative rephrasing while maintaining accuracy
         )
         return json.loads(resp.choices[0].message.content)
