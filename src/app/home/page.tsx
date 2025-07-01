@@ -65,7 +65,7 @@ export default function HomePage() {
             <Card shadow="sm" padding="lg" radius="md" withBorder onClick={() => router.push("/home/completed_resumes")} style={{cursor:"pointer", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between"}}>
               <Card.Section>
                 <Image
-                  src="completed_cv.jpg"
+                  src="completed_cv4.png"
                   height={160}
                   alt="Completed Resumes"
                 />
@@ -84,7 +84,7 @@ export default function HomePage() {
             <Card shadow="sm" padding="lg" radius="md" withBorder style={{cursor:"pointer", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between"}}>
               <Card.Section>
                 <Image
-                  src="about_us.png"
+                  src="about_us1.png"
                   height={160}
                   alt="About Us"
                 />

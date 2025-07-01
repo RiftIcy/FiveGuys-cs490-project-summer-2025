@@ -46,13 +46,16 @@
     &,
     &:hover {
       background-color: var(--mantine-color-blue-light);
-      color: var(--mantine-color-blue-light-color);
+      color: var(--active-link-blue, var(--primary, #8b5cf6));
 
       .linkIcon {
-        color: var(--mantine-color-blue-light-color);
+        color: var(--active-link-blue, var(--primary, #8b5cf6));
       }
     }
   }
+}
+.theme-night-sky {
+  --active-link-blue: var(--primary, #8b5cf6);
 }
 
 .linkIcon {
