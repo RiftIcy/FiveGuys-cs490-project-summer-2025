@@ -1,0 +1,96 @@
+Name:
+Jordan Smith
+
+Contact Information:
+{
+  "emails": ["jordan.smith@example.com"],
+  "phones": ["555-987-6543"]
+}
+
+Career Objective:
+Detail-oriented Network Engineer with over 7 years of experience in enterprise networking environments. Skilled in supporting large-scale infrastructure and collaborating with cross-functional teams to deliver reliable network solutions. Seeking to leverage expertise in routing, switching, and cloud networking in a challenging Sr Network Engineer role.
+
+Skills:
+{
+  "Networking": [
+    "Cisco routers and switches",
+    "Meraki security appliances",
+    "LAN/WAN design",
+    "BGP",
+    "OSPF",
+    "VLAN configuration",
+    "IP addressing and subnetting",
+    "QoS implementation"
+  ],
+  "Cloud Technologies": [
+    "AWS VPC configuration",
+    "Azure VPN Gateways"
+  ],
+  "Security": [
+    "Palo Alto firewall administration"
+  ],
+  "Wireless": [
+    "Aruba Wireless deployment and support"
+  ],
+  "Scripting": [
+    "Python for automation"
+  ],
+  "Monitoring": [
+    "SNMP",
+    "packet capture tools"
+  ]
+}
+
+Experience:
+[
+  {
+    "title": "Network Engineer",
+    "company": "Global Media Corp",
+    "location": "New York, NY",
+    "start_date": "2019-03",
+    "end_date": "Present",
+    "role_summary": "Provide operational support and design input for a large-scale enterprise network, including routing, switching, and security solutions.",
+    "responsibilities": [
+      "Maintained Cisco and Meraki network infrastructure across multiple locations.",
+      "Configured and supported Palo Alto firewalls for secure remote access.",
+      "Implemented AWS site-to-site VPN connections for hybrid workloads.",
+      "Participated in network design reviews and capacity planning.",
+      "Monitored performance and performed packet analysis using Wireshark."
+    ],
+    "accomplishments": [
+      "Improved network uptime to 99.99% through proactive monitoring and optimization."
+    ]
+  },
+  {
+    "title": "Network Support Engineer",
+    "company": "TechEdge Solutions",
+    "location": "New York, NY",
+    "start_date": "2015-01",
+    "end_date": "2019-02",
+    "role_summary": "Supported day-to-day operations of a multi-site network, focusing on routing, switching, and wireless troubleshooting.",
+    "responsibilities": [
+      "Deployed Cisco switches and configured VLANs and trunking.",
+      "Provided Tier 3 support for network incidents and escalations.",
+      "Assisted with cloud connectivity and VPN configuration.",
+      "Developed network documentation and procedures."
+    ],
+    "accomplishments": [
+      "Reduced mean time to resolution by 25% by implementing standardized troubleshooting workflows."
+    ]
+  }
+]
+
+Education:
+[
+  {
+    "degree": "Bachelor of Science in Computer Networking",
+    "institution": "City University of New York",
+    "start_date": "2010-08",
+    "end_date": "2014-05",
+    "GPA": 3.5
+  }
+]
+
+Certifications:
+- Cisco Certified Network Associate (CCNA)
+- Palo Alto Networks Certified Cybersecurity Associate (PCCSA)
