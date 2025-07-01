@@ -25,6 +25,7 @@ Install all required Node packages:
 
 ```bash
 npm install
+npm install mammoth
 ```
 
 ---
@@ -45,9 +46,37 @@ Follow these steps:
 
 5. Enable an **Authentication provider** (e.g., Email/Password) under **Build → Authentication → Sign-in method**.
 
+6. Go to project settings (click on the cog), then click on service accounts.
+
+7. Click on the "Generate new private key" button and move the downloaded file to the root of the folder.
+
+---
+### ***Step 4: Set up Mongodb Atlas**
+
+You'll need to create your own Mongodb Atlas account and create your database there
+
+Follow these steps:
+
+1. Go to [https://www.mongodb.com/products/platform/atlas-database] (Mongdb Atlas)
+
+2. Create a account and log in.
+
+3. Create a Cluster.
+
+4. Click on connect drivers.
+
+5. Choose python and run the command it tells you, create a db user and password.
+
+6. Copy the connection string it provides in step 3 and replace the parts where it says user and password with what you entered before
+
+7. Click done
+
+8. The connection string will be used for the MONGO_URI section
+
+9. (Optional) If you're having issues connecting to the mongodb server, go to Network Access and edit the allowed IPs to 0.0.0.0/0
 ---
 
-### **Step 4: Create Your `.env.local` File**
+### **Step 5: Create Your `.env.local` File**
 
 Create a `.env.local` file in the root of the project and copy the following template:
 
@@ -72,7 +101,7 @@ FIREBASE_ADMINSDK_PATH=/absolute/path/to/your/<your-firebase-adminsdk-file>.json
 
 ---
 
-### **Step 5: Run the Development Server**
+### **Step 6: Run the Development Server**
 
 Now that everything is configured, start the development server:
 
