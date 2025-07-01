@@ -89,8 +89,8 @@ return (
                 <Image 
                   src="/logoonly.png" 
                   alt="Resume Fox Logo" 
-                  width={24} 
-                  height={24} 
+                  width={50} 
+                  height={50} 
                   style={{ 
                     display: 'block',
                     marginRight: '12px' // Match the spacing of icons to text

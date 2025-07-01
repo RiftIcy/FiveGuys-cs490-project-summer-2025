@@ -782,83 +782,85 @@ export default function ResumeDatabasePage() {
 
       {/* Uploads table */}
       <ScrollArea>
-        <Table verticalSpacing="sm" withTableBorder>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>Select</Table.Th>
-              <Table.Th>Name</Table.Th>
-              <Table.Th>Uploaded</Table.Th>
-              <Table.Th>Type</Table.Th>
-              <Table.Th></Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {uploads.map((u) => {
-              const isFile = !u.hasText;
-              return (
-                <React.Fragment key={u.id}>
-                  <Table.Tr>
-                    {/* Mantine checkbox */}
-                    <Table.Td>
-                      <Checkbox
-                        aria-label={`Select ${u.displayName}`}
-                        checked={selectedIds.has(u.id)}
-                        onChange={() => toggleSelection(u.id)}
-                      />
-                    </Table.Td>
+        <div style={{ height: "60vh", overflowY: "auto", marginBottom: "2rem" }}>
+          <Table verticalSpacing="sm" withTableBorder>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Select</Table.Th>
+                <Table.Th>Name</Table.Th>
+                <Table.Th>Uploaded</Table.Th>
+                <Table.Th>Type</Table.Th>
+                <Table.Th></Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {uploads.map((u) => {
+                const isFile = !u.hasText;
+                return (
+                  <React.Fragment key={u.id}>
+                    <Table.Tr>
+                      {/* Mantine checkbox */}
+                      <Table.Td>
+                        <Checkbox
+                          aria-label={`Select ${u.displayName}`}
+                          checked={selectedIds.has(u.id)}
+                          onChange={() => toggleSelection(u.id)}
+                        />
+                      </Table.Td>
 
-                    <Table.Td>{u.displayName}</Table.Td>
-                    <Table.Td>
-                      {new Date(u.uploadedAt).toLocaleString()}
-                    </Table.Td>
-                    <Table.Td>{isFile ? "Document" : "Text"}</Table.Td>
-                    <Table.Td>
-                      <Group>
-                        {/* Expand / collapse */}
-                        <Tooltip
-                          label={
-                            expandedId === u.id ? "Hide preview" : "Preview"
-                          }
-                        >
-                          <Button
-                            variant="light"
-                            size="xs"
-                            onClick={() => toggleExpand(u.id)}
+                      <Table.Td>{u.displayName}</Table.Td>
+                      <Table.Td>
+                        {new Date(u.uploadedAt).toLocaleString()}
+                      </Table.Td>
+                      <Table.Td>{isFile ? "Document" : "Text"}</Table.Td>
+                      <Table.Td>
+                        <Group>
+                          {/* Expand / collapse */}
+                          <Tooltip
+                            label={
+                              expandedId === u.id ? "Hide preview" : "Preview"
+                            }
                           >
-                            {expandedId === u.id ? "Hide" : "Preview"}
-                          </Button>
-                        </Tooltip>
+                            <Button
+                              variant="light"
+                              size="xs"
+                              onClick={() => toggleExpand(u.id)}
+                            >
+                              {expandedId === u.id ? "Hide" : "Preview"}
+                            </Button>
+                          </Tooltip>
 
-                        {/* Delete */}
-                        <Tooltip label="Delete this entry">
-                          <Button
-                            variant="light"
-                            color="red"
-                            size="xs"
-                            onClick={() => setPendingDeleteId(u.id)}
-                          >
-                            Delete
-                          </Button>
-                        </Tooltip>
-                      </Group>
-                    </Table.Td>
-                  </Table.Tr>
+                          {/* Delete */}
+                          <Tooltip label="Delete this entry">
+                            <Button
+                              variant="light"
+                              color="red"
+                              size="xs"
+                              onClick={() => setPendingDeleteId(u.id)}
+                            >
+                              Delete
+                            </Button>
+                          </Tooltip>
+                        </Group>
+                      </Table.Td>
+                    </Table.Tr>
 
-                  {/* Collapsible preview */}
-                  <Table.Tr>
-                    <Table.Td colSpan={5} style={{ padding: 0, border: 0 }}>
-                      <Collapse in={expandedId === u.id}>
-                        <Stack px="md" py="sm">
-                          {renderFilePreview(u)}
-                        </Stack>
-                      </Collapse>
-                    </Table.Td>
-                  </Table.Tr>
-                </React.Fragment>
-              );
-            })}
-          </Table.Tbody>
-        </Table>
+                    {/* Collapsible preview */}
+                    <Table.Tr>
+                      <Table.Td colSpan={5} style={{ padding: 0, border: 0 }}>
+                        <Collapse in={expandedId === u.id}>
+                          <Stack px="md" py="sm">
+                            {renderFilePreview(u)}
+                          </Stack>
+                        </Collapse>
+                      </Table.Td>
+                    </Table.Tr>
+                  </React.Fragment>
+                );
+              })}
+            </Table.Tbody>
+          </Table>
+        </div>
       </ScrollArea>
 
       {/* Footer controls */}

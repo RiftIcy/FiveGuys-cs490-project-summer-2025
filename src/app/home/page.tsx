@@ -21,7 +21,7 @@ export default function HomePage() {
   }
 
   return (
-    <Container size="xl" my="md">
+    <Container size="lg" my="md">
       <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
         {/* Upload File */}
         <Card shadow="sm" padding="lg" radius="md" withBorder onClick={() => router.push('/home/resume_builder')} style={{cursor:"pointer", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between"}}>
