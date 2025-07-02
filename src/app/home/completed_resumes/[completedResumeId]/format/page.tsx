@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Container, Title, Loader, Text, Stack, Card, Button, Group, Alert, ActionIcon, Tooltip, Collapse } from "@mantine/core";
 import { useParams, useRouter } from "next/navigation";
 import { getAuth } from "firebase/auth";
-import { IconDownload } from "@tabler/icons-react";
+import { IconDownload, IconArrowBack } from "@tabler/icons-react";
 
 interface CompletedResume {
     _id: string;
@@ -27,7 +27,7 @@ export default function FormatResumePage() {
     const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
     const [filename, setFilename] = useState<string>('Resume.pdf');
     const [formatError, setFormatError] = useState<string | null>(null);
-    const [showPreview, setShowPreview] = useState(false); // State to toggle PDF preview
+    const [showPreview, setShowPreview] = useState(true); // State to toggle PDF preview
 
     const getAuthHeaders = async () => {
         const auth = getAuth();
@@ -138,17 +138,15 @@ export default function FormatResumePage() {
                     variant="subtle" 
                     onClick={() => router.push(`/home/completed_resumes/${completedResumeId}`)}
                 >
-                    ← Back to Resume
+                    <IconArrowBack/>&nbsp;&nbsp;Resume
                 </Button>
             </Group>
 
             <Title order={2} mb="md">
-                Format Resume: {data.job_title} at {data.company}
+                Formatted Resume for {data.tailored_resume.first_name} {data.tailored_resume.last_name}: {data.job_title} at {data.company}
             </Title>
             
             <Text size="sm" color="dimmed" mb="xl">
-                Resume for: {data.tailored_resume.first_name} {data.tailored_resume.last_name}
-                <br />
                 Created: {new Date(data.created_at).toLocaleString()}
             </Text>
 
