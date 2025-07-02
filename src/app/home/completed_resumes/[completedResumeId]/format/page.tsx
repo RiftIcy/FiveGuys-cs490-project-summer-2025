@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Container, Title, Loader, Text, Stack, Card, Button, Group, Alert, ActionIcon } from "@mantine/core";
+import { Container, Title, Loader, Text, Stack, Card, Button, Group, Alert, ActionIcon, Tooltip, Collapse } from "@mantine/core";
 import { useParams, useRouter } from "next/navigation";
 import { getAuth } from "firebase/auth";
+import { IconDownload } from "@tabler/icons-react";
 
 interface CompletedResume {
     _id: string;
@@ -26,6 +27,7 @@ export default function FormatResumePage() {
     const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
     const [filename, setFilename] = useState<string>('Resume.pdf');
     const [formatError, setFormatError] = useState<string | null>(null);
+    const [showPreview, setShowPreview] = useState(false); // State to toggle PDF preview
 
     const getAuthHeaders = async () => {
         const auth = getAuth();
@@ -93,10 +95,6 @@ export default function FormatResumePage() {
             
             if (result.downloadUrl) {
                 setDownloadUrl(result.downloadUrl);
-                // Set filename if provided by backend
-                if (result.filename) {
-                    setFilename(result.filename);
-                }
             }
         } catch (error) {
             setFormatError(error instanceof Error ? error.message : 'Unknown error occurred');
@@ -110,6 +108,13 @@ export default function FormatResumePage() {
         if (!data) return;
         await formatResume(data);
     };
+
+    useEffect(() => {
+        if (data) {
+            const formattedFilename = `${data.job_title.replace(/[,\s]+/g, '_')}.pdf`;
+            setFilename(formattedFilename);
+        }
+    }, [data]);
 
     if (loading || isFormatting) {
         return (
@@ -165,31 +170,75 @@ export default function FormatResumePage() {
                 <Card shadow="sm" padding="lg" mb="md">
                     <Stack gap="md">
                         <Group justify="space-between">
-                            <Text size="lg" fw={500}>PDF Preview</Text> 
-                            <Button 
-                                variant="outline"
-                                onClick={handleFormatResume}
-                                loading={isFormatting}
-                            >
-                                Regenerate PDF
-                            </Button>
+                            <Tooltip label="Preview the PDF inline" position="top" withArrow>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                        setShowPreview(!showPreview);
+                                        if (!showPreview) {
+                                            // Scroll to PDF viewer after a short delay to allow the collapse to expand
+                                            setTimeout(() => {
+                                                const previewElement = document.getElementById('pdf-preview');
+                                                if (previewElement) {
+                                                    previewElement.scrollIntoView({ 
+                                                        behavior: 'smooth',
+                                                        block: 'start'
+                                                    });
+                                                }
+                                            }, 350);
+                                        }
+                                    }}
+                                >
+                                    {showPreview ? "Hide PDF" : "Preview PDF"}
+                                </Button>
+                            </Tooltip>
+                            <Group gap="xs">
+                                <Button 
+                                    variant="outline"
+                                    onClick={handleFormatResume}
+                                    loading={isFormatting}
+                                >
+                                    Regenerate PDF
+                                </Button>
+                                <Tooltip label="Download the PDF file" position="top" withArrow>
+                                    <ActionIcon
+                                        variant="outline"
+                                        color="green"
+                                        size="lg"
+                                        onClick={() => {
+                                            const link = document.createElement('a');
+                                            link.href = downloadUrl;
+                                            link.download = filename;
+                                            link.click();
+                                        }}
+                                    >
+                                        <IconDownload size={20} />
+                                    </ActionIcon>
+                                </Tooltip>
+                            </Group>
                         </Group>
-                        
+
                         {/* PDF Viewer */}
-                        <div style={{ 
-                            width: '100%', 
-                            height: '80vh', 
-                            border: '1px solid #e0e0e0',
-                            borderRadius: '8px',
-                            overflow: 'hidden'
-                        }}>
-                            <iframe
-                                src={downloadUrl}
-                                width="100%"
-                                height="100%"
-                                style={{ border: 'none' }}
-                            />
-                        </div>
+                        <Collapse in={showPreview} transitionDuration={300}>
+                            <div 
+                                id="pdf-preview"
+                                style={{ 
+                                    width: '100%', 
+                                    height: '80vh', 
+                                    border: '1px solid #e0e0e0',
+                                    borderRadius: '8px',
+                                    overflow: 'hidden',
+                                    marginTop: '1rem'
+                                }}
+                            >
+                                <iframe
+                                    src={downloadUrl}
+                                    width="100%"
+                                    height="100%"
+                                    style={{ border: 'none' }}
+                                />
+                            </div>
+                        </Collapse>
                     </Stack>
                 </Card>
             )}
