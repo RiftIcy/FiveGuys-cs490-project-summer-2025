@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Container, Title, Loader, Text, Stack, Card, Code } from "@mantine/core";
+import { Container, Title, Loader, Text, Stack, Card, List, Group, Divider, Code } from "@mantine/core";
 import { useParams } from "next/navigation";
 import { getAuth } from "firebase/auth";
 
@@ -71,50 +71,166 @@ export default function CompletedResumePage() {
             </Text>
 
             <Card shadow="sm" padding="lg" mb="md">
-                <Title order={4} mb="md">
-                    Combined & Tailored Resume
+                <Title order={3} mb="lg" ta="center">
+                    {data.tailored_resume.first_name} {data.tailored_resume.last_name}
                 </Title>
                 
-                <Stack>
+                <Stack gap="lg">
+                    {/* Contact Information */}
                     <div>
-                        <Text>Name:</Text>
-                        <Text>{data.tailored_resume.first_name} {data.tailored_resume.last_name}</Text>
+                        <Title order={4} mb="sm">Contact Information</Title>
+                        <Stack gap="xs">
+                            {data.tailored_resume.contact && typeof data.tailored_resume.contact === 'object' ? (
+                                Object.entries(data.tailored_resume.contact).map(([key, value]) => (
+                                    <Group key={key} gap="sm">
+                                        <Text fw={500} tt="capitalize">{key.replace('_', ' ')}:</Text>
+                                        <Text>{String(value)}</Text>
+                                    </Group>
+                                ))
+                            ) : (
+                                <Text>{String(data.tailored_resume.contact)}</Text>
+                            )}
+                        </Stack>
                     </div>
                     
-                    <div>
-                        <Text>Contact Information:</Text>
-                        <Code block>
-                            {JSON.stringify(data.tailored_resume.contact, null, 2)}
-                        </Code>
-                    </div>
+                    <Divider />
                     
-                    <div>
-                        <Text>Career Objective:</Text>
-                        <Text>{data.tailored_resume.career_objective}</Text>
-                    </div>
+                    {/* Career Objective */}
+                    {data.tailored_resume.career_objective && (
+                        <div>
+                            <Title order={4} mb="sm">Career Objective</Title>
+                            <Text>{data.tailored_resume.career_objective}</Text>
+                        </div>
+                    )}
                     
-                    <div>
-                        <Text>Skills:</Text>
-                        <Code block>
-                            {JSON.stringify(data.tailored_resume.skills, null, 2)}
-                        </Code>
-                    </div>
+                    <Divider />
                     
-                    <div>
-                        <Text>Experience:</Text>
-                        <Code block>
-                            {JSON.stringify(data.tailored_resume.jobs, null, 2)}
-                        </Code>
-                    </div>
+                    {/* Skills */}
+                    {data.tailored_resume.skills && (
+                        <div>
+                            <Title order={4} mb="sm">Skills</Title>
+                            {Array.isArray(data.tailored_resume.skills) ? (
+                                <Text>{data.tailored_resume.skills.join(" • ")}</Text>
+                            ) : typeof data.tailored_resume.skills === 'object' ? (
+                                <Stack gap="xs">
+                                    {Object.entries(data.tailored_resume.skills).map(([category, skills]) => (
+                                        <div key={category}>
+                                            <Text fw={500} tt="capitalize">{category.replace('_', ' ')}:</Text>
+                                            <Text ml="md">
+                                                {Array.isArray(skills) ? skills.join(", ") : String(skills)}
+                                            </Text>
+                                        </div>
+                                    ))}
+                                </Stack>
+                            ) : (
+                                <Text>{String(data.tailored_resume.skills)}</Text>
+                            )}
+                        </div>
+                    )}
                     
-                    <div>
-                        <Text>Education:</Text>
-                        <Code block>
-                            {JSON.stringify(data.tailored_resume.education, null, 2)}
-                        </Code>
-                    </div>
+                    <Divider />
+                    
+                    {/* Experience */}
+                    {data.tailored_resume.jobs && Array.isArray(data.tailored_resume.jobs) && data.tailored_resume.jobs.length > 0 && (
+                        <div>
+                            <Title order={4} mb="sm">Professional Experience</Title>
+                            <Stack gap="md">
+                                {data.tailored_resume.jobs.map((job: any, index: number) => (
+                                    <Card key={index} p="md" withBorder>
+                                        <Stack gap="sm">
+                                            {/* Title */}
+                                            {(job.title || job.position) && (
+                                                <Text fw={500}>{job.title || job.position}</Text>
+                                            )}
+                                            
+                                            {/* Company */}
+                                            {job.company && (
+                                                <Text fw={500}>{job.company}</Text>
+                                            )}
+                                            
+                                            {/* Location */}
+                                            {job.location && (
+                                                <Text size="sm">{job.location}</Text>
+                                            )}
+                                            
+                                            {/* Start Date/End Date */}
+                                            {(job.start_date || job.end_date) && (
+                                                <Text size="sm">
+                                                    {job.start_date} - {job.end_date || 'Present'}
+                                                </Text>
+                                            )}
+                                            
+                                            {/* Role Summary */}
+                                            {(job.role_summary || job.summary || job.description) && (
+                                                <div>
+                                                    <Text fw={500} mb="xs">Role Summary:</Text>
+                                                    <Text>{job.role_summary || job.summary || job.description}</Text>
+                                                </div>
+                                            )}
+                                            
+                                            {/* Responsibilities/Accomplishments */}
+                                            {(job.responsibilities || job.accomplishments) && (
+                                                <div>
+                                                    <Text fw={500} mb="xs">
+                                                        {job.responsibilities ? 'Responsibilities:' : 'Accomplishments:'}
+                                                    </Text>
+                                                    {Array.isArray(job.responsibilities || job.accomplishments) ? (
+                                                        <List size="sm">
+                                                            {(job.responsibilities || job.accomplishments).map((item: string, i: number) => (
+                                                                <List.Item key={i}>{item}</List.Item>
+                                                            ))}
+                                                        </List>
+                                                    ) : (
+                                                        <Text>{String(job.responsibilities || job.accomplishments)}</Text>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </Stack>
+                                    </Card>
+                                ))}
+                            </Stack>
+                        </div>
+                    )}
+                    
+                    <Divider />
+                    
+                    {/* Education */}
+                    {data.tailored_resume.education && Array.isArray(data.tailored_resume.education) && data.tailored_resume.education.length > 0 && (
+                        <div>
+                            <Title order={4} mb="sm">Education</Title>
+                            <Stack gap="md">
+                                {data.tailored_resume.education.map((edu: any, index: number) => (
+                                    <Card key={index} p="md" withBorder>
+                                        <Stack gap="sm">
+                                            {/* Institution */}
+                                            {(edu.institution || edu.school) && (
+                                                <Text fw={500}>{edu.institution || edu.school}</Text>
+                                            )}
+                                            
+                                            {/* Degree */}
+                                            {edu.degree && (
+                                                <Text fw={500}>{edu.degree}</Text>
+                                            )}
+                                            
+                                            {/* Start Date/End Date */}
+                                            {(edu.start_date || edu.end_date || edu.graduation_date) && (
+                                                <Text size="sm">
+                                                    {edu.start_date} - {edu.end_date || edu.graduation_date || 'Present'}
+                                                </Text>
+                                            )}
+                                            
+                                            {/* GPA */}
+                                            {(edu.gpa || edu.GPA) && (
+                                                <Text size="sm">GPA: {edu.gpa || edu.GPA}</Text>
+                                            )}
+                                        </Stack>
+                                    </Card>
+                                ))}
+                            </Stack>
+                        </div>
+                    )}
                 </Stack>
             </Card>
         </Container>
-);
+    );
 }
