@@ -6,6 +6,10 @@ from parser.parser import JobAdParser, ResumeTailoringParser
 from datetime import datetime
 import threading
 import time
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from job_scraper import JobAdScraper
 
 job_ads_bp = Blueprint("job_ads", __name__)
 
@@ -13,9 +17,15 @@ job_ads_bp = Blueprint("job_ads", __name__)
 @require_firebase_auth
 def upload_job_ad():
     job_ad_text = request.form.get("job_ad")
+    job_ad_url = request.form.get("job_ad_url")
 
+    # Handle URL-based job ad
+    if job_ad_url and job_ad_url.strip():
+        return handle_job_ad_url(job_ad_url.strip())
+    
+    # Handle text-based job ad (existing functionality)
     if not job_ad_text or not job_ad_text.strip():
-        return jsonify({"error": "No job ad text provided"}), 400
+        return jsonify({"error": "No job ad text or URL provided"}), 400
 
     clean_text = job_ad_text.strip()
 
@@ -50,6 +60,60 @@ def upload_job_ad():
         "parse_result": parse_result
     }), 200
 
+def handle_job_ad_url(url: str):
+    """Handle job ad URL scraping and parsing"""
+    try:
+        # Initialize scraper
+        scraper = JobAdScraper()
+        
+        # Scrape the URL
+        scrape_result = scraper.scrape_job_ad(url)
+        
+        if not scrape_result["success"]:
+            return jsonify({"error": f"Failed to scrape URL: {scrape_result['error']}"}), 400
+        
+        scraped_content = scrape_result["content"]
+        if not scraped_content or len(scraped_content.strip()) < 100:
+            return jsonify({"error": "Insufficient content found at the provided URL"}), 400
+        
+        # Store the job ad with URL metadata
+        try:
+            doc = {
+                "job_ad_text": scraped_content,
+                "job_ad_url": url,
+                "scraped_title": scrape_result.get("title"),
+                "uploaded_at": datetime.utcnow(),
+                "user_id": request.user_id,
+            }
+            result = job_ads_collection.insert_one(doc)
+        except Exception as e:
+            return jsonify({"error": f"Database error: {str(e)}"}), 500
+
+        # Parse with LLM
+        parser = JobAdParser()
+        try:
+            parse_result = parser.parse(scraped_content)
+        except Exception as e:
+            return jsonify({"error": f"LLM parsing failed: {str(e)}"}), 500
+
+        # Save parse result into document
+        job_ads_collection.update_one(
+            {"_id": result.inserted_id},
+            {"$set": {"parse_result": parse_result}}
+        )
+
+        # Return result
+        return jsonify({
+            "message": "Job ad URL scraped and parsed successfully",
+            "id": str(result.inserted_id),
+            "parse_result": parse_result,
+            "scraped_from": url,
+            "scraped_title": scrape_result.get("title")
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": f"URL processing failed: {str(e)}"}), 500
+
 @job_ads_bp.route("/job_ads/<id>", methods=["GET"])
 @require_firebase_auth
 def get_job_ad(id):
@@ -72,7 +136,9 @@ def get_job_ad(id):
         "id": str(doc["_id"]),
         "job_ad_text":   doc["job_ad_text"],
         "uploaded_at":   doc["uploaded_at"].isoformat(),
-        "parse_result": parse_result
+        "parse_result": parse_result,
+        "job_ad_url": doc.get("job_ad_url"),
+        "scraped_title": doc.get("scraped_title")
     }), 200
 
 @job_ads_bp.route("/job_ads", methods=["GET"])
@@ -82,12 +148,20 @@ def list_job_ads():
         cursor = job_ads_collection.find({"user_id": request.user_id}).sort("uploaded_at", -1)
         out = []
         for doc in cursor:
-            out.append({
+            job_data = {
                 "_id": str(doc["_id"]),
                 "job_ad_text": doc["job_ad_text"],
                 "uploaded_at": doc["uploaded_at"].isoformat(),
                 "parse_result": doc.get("parse_result", {}),
-            })
+            }
+            
+            # Add URL-related fields if they exist
+            if doc.get("job_ad_url"):
+                job_data["job_ad_url"] = doc["job_ad_url"]
+            if doc.get("scraped_title"):
+                job_data["scraped_title"] = doc["scraped_title"]
+                
+            out.append(job_data)
         return jsonify(out), 200
 
     except Exception as e:

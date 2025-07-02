@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Container, Title, Loader, Text, Table, ScrollArea, Group, Button, Stack, Collapse, Modal, Tooltip, Badge } from "@mantine/core";
-import { IconCheck, IconClock, IconBolt } from "@tabler/icons-react";
+import { Container, Title, Loader, Text, Table, ScrollArea, Group, Button, Stack, Collapse, Modal, Tooltip, Badge, Anchor } from "@mantine/core";
+import { IconCheck, IconClock, IconBolt, IconExternalLink } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { useRouter } from "next/navigation";
 import { getAuth } from "firebase/auth";
@@ -11,6 +11,8 @@ interface JobAd {
     _id: string;
     job_ad_text: string;
     uploaded_at: string;
+    job_ad_url?: string;
+    scraped_title?: string;
     parse_result: {
         job_title: string;
         company: string;
