@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Container, Title, Loader, Text, Stack, Card, List, Group, Divider, Code } from "@mantine/core";
-import { useParams } from "next/navigation";
+import { Container, Title, Loader, Text, Stack, Card, List, Group, Divider, Button, Tooltip } from "@mantine/core";
+import { useParams, useRouter } from "next/navigation";
 import { getAuth } from "firebase/auth";
 
 interface CompletedResume {
@@ -18,6 +18,7 @@ interface CompletedResume {
 
 export default function CompletedResumePage() {
     const { completedResumeId } = useParams();
+    const router = useRouter();
     const [data, setData] = useState<CompletedResume | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -71,9 +72,20 @@ export default function CompletedResumePage() {
             </Text>
 
             <Card shadow="sm" padding="lg" mb="md">
-                <Title order={3} mb="lg" ta="center">
-                    {data.tailored_resume.first_name} {data.tailored_resume.last_name}
-                </Title>
+                <Group justify="space-between" align="flex-start" mb="lg">
+                    <Title order={3} ta="center" style={{ flex: 1 }}>
+                        {data.tailored_resume.first_name} {data.tailored_resume.last_name}
+                    </Title>
+                    <Tooltip label="Generate a professional PDF version of this resume" position="bottom">
+                        <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => router.push(`/home/completed_resumes/${completedResumeId}/format`)}
+                        >
+                            Format
+                        </Button>
+                    </Tooltip>
+                </Group>
                 
                 <Stack gap="lg">
                     {/* Contact Information */}
