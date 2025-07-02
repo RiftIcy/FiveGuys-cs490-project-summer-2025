@@ -131,7 +131,7 @@ export default function FormatResumePage() {
             <Group justify="space-between" mb="md">
                 <Button 
                     variant="subtle" 
-                    onClick={() => router.back()}
+                    onClick={() => router.push(`/home/completed_resumes/${completedResumeId}`)}
                 >
                     ← Back to Resume
                 </Button>
