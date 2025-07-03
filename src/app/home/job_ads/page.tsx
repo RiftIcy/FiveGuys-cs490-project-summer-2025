@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Container, Title, Loader, Text, Table, ScrollArea, Group, Button, Stack, Collapse, Modal, Tooltip, Badge, Anchor } from "@mantine/core";
-import { IconCheck, IconClock, IconBolt, IconExternalLink } from "@tabler/icons-react";
+import { IconCheck, IconClock, IconBolt, IconExternalLink, IconBriefcase } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { useRouter } from "next/navigation";
 import { getAuth } from "firebase/auth";
@@ -35,6 +35,9 @@ export default function JobAdsPage() {
     const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false)
     const [generationJobs, setGenerationJobs] = useState<{[jobAdId: string]: any}>({});
+    const [appliedJobs, setAppliedJobs] = useState<Set<string>>(new Set());
+    const [selectedAppliedJob, setSelectedAppliedJob] = useState<JobAd | null>(null);
+    const [showAppliedWarning, setShowAppliedWarning] = useState(false);
     const router = useRouter();
 
     // Ensure user is authenticated
@@ -95,8 +98,33 @@ export default function JobAdsPage() {
             }
         }
         
+        async function fetchAppliedJobs() {
+            try {
+                const authHeaders = await getAuthHeaders();
+                const response = await fetch("http://localhost:5000/completed_resumes", {
+                    headers: authHeaders,
+                });
+                
+                if (response.ok) {
+                    const completedResumes = await response.json();
+                    const appliedJobIds = new Set<string>();
+                    
+                    completedResumes.forEach((resume: any) => {
+                        if (resume.job_ad_id) {
+                            appliedJobIds.add(resume.job_ad_id);
+                        }
+                    });
+                    
+                    setAppliedJobs(appliedJobIds);
+                }
+            } catch (err) {
+                console.error("Failed to load applied jobs:", err);
+            }
+        }
+        
         fetchJobAds();
         fetchGenerationJobs();
+        fetchAppliedJobs();
     }, []);
 
     // Poll for generation job updates every 5 seconds
@@ -163,6 +191,23 @@ export default function JobAdsPage() {
         setExpandedId((prev) => (prev === id ? null : id));
     };
 
+    const handleJobSelect = (ad: JobAd) => {
+        if (appliedJobs.has(ad._id)) {
+            setSelectedAppliedJob(ad);
+            setShowAppliedWarning(true);
+        } else {
+            router.push(`/home/job_ads/${ad._id}`);
+        }
+    };
+
+    const proceedWithAppliedJob = () => {
+        if (selectedAppliedJob) {
+            router.push(`/home/job_ads/${selectedAppliedJob._id}`);
+        }
+        setShowAppliedWarning(false);
+        setSelectedAppliedJob(null);
+    };
+
     if (loading) {
         return (
             <Container size="sm" py="xl">
@@ -215,6 +260,16 @@ export default function JobAdsPage() {
                   <Table.Td>
                     <Group gap="xs">
                       <Text>{ad.parse_result.job_title}</Text>
+                      {/* Show applied badge if job has been applied to */}
+                      {appliedJobs.has(ad._id) && (
+                        <Badge 
+                          color="green" 
+                          size="sm"
+                          leftSection={<IconBriefcase size={12} />}
+                        >
+                          Applied
+                        </Badge>
+                      )}
                       {/* CF010: Show processing status indicator */}
                       {generationJobs[ad._id] && (
                         <Badge 
@@ -246,7 +301,7 @@ export default function JobAdsPage() {
                       </Tooltip>
 
                       <Tooltip label="Select this job ad">
-                        <Button variant="light" size="xs" onClick={() => router.push(`/home/job_ads/${ad._id}`)}>
+                        <Button variant="light" size="xs" onClick={() => handleJobSelect(ad)}>
                           Select
                         </Button>
                       </Tooltip>
@@ -298,6 +353,60 @@ export default function JobAdsPage() {
           </Table.Tbody>
         </Table>
       </ScrollArea>
+
+      {/* Applied Job Warning Modal */}
+      <Modal
+        opened={showAppliedWarning}
+        onClose={() => {
+          setShowAppliedWarning(false);
+          setSelectedAppliedJob(null);
+        }}
+        title="Already Applied"
+        centered
+        size="md"
+      >
+        <Stack gap="md">
+          <Group gap="xs" align="center">
+            <IconBriefcase size={24} color="#51cf66" />
+            <Text fw={500}>You've already applied to this position</Text>
+          </Group>
+          
+          <Text>
+            You have already created and submitted a tailored resume for{" "}
+            <Text component="span" fw={500} c="green">
+              {selectedAppliedJob?.parse_result.job_title}
+            </Text>{" "}
+            at{" "}
+            <Text component="span" fw={500} c="green">
+              {selectedAppliedJob?.parse_result.company}
+            </Text>.
+          </Text>
+          
+          <Text size="sm" c="dimmed">
+            You can still proceed to create an additional tailored resume if you want to 
+            customize it further or use different source resumes.
+          </Text>
+          
+          <Group justify="space-between" mt="md">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAppliedWarning(false);
+                setSelectedAppliedJob(null);
+              }}
+            >
+              Cancel
+            </Button>
+            
+            <Button
+              color="green"
+              onClick={proceedWithAppliedJob}
+            >
+              Proceed Anyway
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Container>
   );
 }

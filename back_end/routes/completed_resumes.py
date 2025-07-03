@@ -65,6 +65,7 @@ def get_all_completed_resumes():
                 "source_resume_ids": doc.get("source_resume_ids", []),
                 "source_resume_names": doc.get("source_resume_names", []),
                 "formatted_pdf_url": doc.get("formatted_pdf_url"),
+                "job_ad_id": doc.get("job_ad_id"),  # Include job_ad_id for applied job tracking
                 # Include limited job_ad_data for overview
                 "job_ad_data": {
                     "job_title": doc.get("job_ad_data", {}).get("job_title", ""),
