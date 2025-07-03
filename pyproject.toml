@@ -24,6 +24,7 @@ requests = "^2.31.0"
 lxml = "^4.9.0"
 playwright = "^1.40.0"
 reportlab = "^4.4.2"
+importlib-metadata = "^8.7.0"
 
 [tool.poetry.group.dev.dependencies]
 

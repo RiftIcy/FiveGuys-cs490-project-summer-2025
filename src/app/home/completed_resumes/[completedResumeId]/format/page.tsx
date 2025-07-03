@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Container, Title, Loader, Text, Stack, Card, Button, Group, Alert, ActionIcon, Tooltip, Collapse, SimpleGrid, Badge, Image } from "@mantine/core";
+import { Container, Title, Loader, Text, Stack, Card, Button, Group, Alert, ActionIcon, Tooltip, Collapse, SimpleGrid, Badge, Image, Switch, Divider } from "@mantine/core";
 import { useParams, useRouter } from "next/navigation";
 import { getAuth } from "firebase/auth";
-import { IconDownload, IconArrowBack, IconCheck } from "@tabler/icons-react";
+import { IconDownload, IconArrowBack, IconCheck, IconColumns1, IconColumns3 } from "@tabler/icons-react";
 import { useTheme } from "@/context/themeContext";
 
 interface CompletedResume {
@@ -24,6 +24,8 @@ interface Template {
     description?: string;
     imageUrl?: string;
     isDefault?: boolean;
+    columnLayout?: 'single' | 'double';
+    features?: string[];
 }
 
 export default function FormatResumePage() {
@@ -45,6 +47,10 @@ export default function FormatResumePage() {
     const [loadingTemplates, setLoadingTemplates] = useState(true);
     const [templateError, setTemplateError] = useState<string | null>(null);
     const [hasSelectedTemplate, setHasSelectedTemplate] = useState(false);
+    
+    // Column layout toggle state
+    const [isDoubleColumn, setIsDoubleColumn] = useState(false);
+    const [availableTemplates, setAvailableTemplates] = useState<Template[]>([]);
 
     // Get theme-appropriate colors and styling
     const getThemeStyles = () => {
@@ -66,6 +72,20 @@ export default function FormatResumePage() {
     };
 
     const themeStyles = getThemeStyles();
+
+    // Helper functions for template management
+    const getBaseTemplateName = (templateId: string) => {
+        return templateId.replace('_1col', '').replace('_2col', '');
+    };
+
+    const getTemplateVariant = (baseTemplate: string, isDoubleColumn: boolean) => {
+        return `${baseTemplate}_${isDoubleColumn ? '2col' : '1col'}`;
+    };
+
+    const filterTemplatesByColumn = (allTemplates: Template[], isDoubleColumn: boolean) => {
+        const suffix = isDoubleColumn ? '_2col' : '_1col';
+        return allTemplates.filter(template => template.id.endsWith(suffix));
+    };
 
     const getAuthHeaders = async () => {
         const auth = getAuth();
@@ -114,13 +134,21 @@ export default function FormatResumePage() {
                 
                 console.log('✅ Templates received:', result.templates); // Debug log
                 
-                setTemplates(result.templates || []);
+                setAvailableTemplates(result.templates || []);
+                
+                // Filter templates based on current column setting (default to single column)
+                const filteredTemplates = filterTemplatesByColumn(result.templates || [], isDoubleColumn);
+                setTemplates(filteredTemplates);
                 
                 // Set default template if available
-                const defaultTemplate = result.templates?.find((t: Template) => t.isDefault);
+                const defaultTemplate = filteredTemplates.find((t: Template) => t.isDefault);
                 if (defaultTemplate) {
                     setSelectedTemplateId(defaultTemplate.id);
                     console.log('🎯 Default template selected:', defaultTemplate.id); // Debug log
+                } else if (filteredTemplates.length > 0) {
+                    // If no default found, select the first available template
+                    setSelectedTemplateId(filteredTemplates[0].id);
+                    console.log('🎯 First template selected:', filteredTemplates[0].id); // Debug log
                 }
             } catch (err) {
                 console.error('❌ Template fetch error:', err); // Debug log
@@ -203,6 +231,36 @@ export default function FormatResumePage() {
         setHasSelectedTemplate(false); // Reset formatting state
     };
 
+    // Handle column layout toggle
+    const handleColumnToggle = (checked: boolean) => {
+        console.log('📐 Column layout changed:', checked ? '2-column' : '1-column'); // Debug log
+        setIsDoubleColumn(checked);
+        
+        // Filter templates based on new column setting
+        const filteredTemplates = filterTemplatesByColumn(availableTemplates, checked);
+        setTemplates(filteredTemplates);
+        
+        // Update selected template to match the new column layout
+        if (selectedTemplateId) {
+            const baseTemplate = getBaseTemplateName(selectedTemplateId);
+            const newTemplateId = getTemplateVariant(baseTemplate, checked);
+            const newTemplate = filteredTemplates.find(t => t.id === newTemplateId);
+            
+            if (newTemplate) {
+                setSelectedTemplateId(newTemplateId);
+                console.log('🔄 Template updated to:', newTemplateId); // Debug log
+            } else if (filteredTemplates.length > 0) {
+                // Fallback to first available template in new layout
+                setSelectedTemplateId(filteredTemplates[0].id);
+                console.log('🔄 Fallback template selected:', filteredTemplates[0].id); // Debug log
+            }
+        }
+        
+        // Clear any existing download since layout changed
+        setDownloadUrl(null);
+        setHasSelectedTemplate(false);
+    };
+
     // RF002: Trigger POST /format_resume to the server (for re-formatting)
     const handleFormatResume = async () => {
         if (!data) return;
@@ -280,6 +338,45 @@ export default function FormatResumePage() {
                             )}
                         </Text>
                         
+                        {/* Column Layout Toggle */}
+                        <Card withBorder padding="md" style={{ backgroundColor: theme === 'night-sky' ? '#1a1b23' : '#f8f9fa' }}>
+                            <Group justify="space-between" align="center">
+                                <Group gap="xs">
+                                    <ActionIcon
+                                        variant="light"
+                                        color={themeStyles.primaryColor}
+                                        size="lg"
+                                    >
+                                        {isDoubleColumn ? <IconColumns3 size={20} /> : <IconColumns1 size={20} />}
+                                    </ActionIcon>
+                                    <Stack gap={2}>
+                                        <Text fw={500} size="sm">
+                                            Column Layout
+                                        </Text>
+                                        <Text size="xs" color="dimmed">
+                                            {isDoubleColumn ? 'Two-column layout (ModernCV style)' : 'Single-column layout (Traditional)'}
+                                        </Text>
+                                    </Stack>
+                                </Group>
+                                
+                                <Switch
+                                    checked={isDoubleColumn}
+                                    onChange={(event) => handleColumnToggle(event.currentTarget.checked)}
+                                    color={themeStyles.primaryColor}
+                                    size="md"
+                                    thumbIcon={
+                                        isDoubleColumn ? (
+                                            <IconColumns3 size={12} color={themeStyles.selectedBorder} />
+                                        ) : (
+                                            <IconColumns1 size={12} color={themeStyles.selectedBorder} />
+                                        )
+                                    }
+                                />
+                            </Group>
+                        </Card>
+                        
+                        <Divider />
+                        
                         {templateError && (
                             <Alert color="yellow" title="Template Loading Warning">
                                 {templateError}. Using default template.
@@ -351,6 +448,21 @@ export default function FormatResumePage() {
                                                 <Text size="xs" color="dimmed">
                                                     {template.description}
                                                 </Text>
+                                            )}
+                                            
+                                            {template.features && (
+                                                <Group gap={4} mt="xs">
+                                                    {template.features.map((feature, idx) => (
+                                                        <Badge
+                                                            key={idx}
+                                                            size="xs"
+                                                            variant="light"
+                                                            color={themeStyles.primaryColor}
+                                                        >
+                                                            {feature}
+                                                        </Badge>
+                                                    ))}
+                                                </Group>
                                             )}
                                         </Stack>
                                     </Card>

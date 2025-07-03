@@ -13,6 +13,7 @@ class LaTeXCompiler:
     def __init__(self):
         self.templates_dir = Path(__file__).parent / "latex_templates"
         self.base_template_path = self.templates_dir / "base_template.tex"
+        self.two_column_template_path = self.templates_dir / "two_column_template.tex"
     
     def escape_latex_text(self, text):
         """Escape special LaTeX characters in text content"""
@@ -52,10 +53,12 @@ class LaTeXCompiler:
     def get_template_config(self, template_id="default"):
         """Load template configuration"""
         try:
-            config_path = self.templates_dir / f"{template_id}.py"
+            # Extract base template name (remove _1col or _2col suffix)
+            base_template = template_id.replace('_1col', '').replace('_2col', '')
+            
+            config_path = self.templates_dir / f"{base_template}.py"
             if not config_path.exists():
-                template_id = "default"
-                config_path = self.templates_dir / f"{template_id}.py"
+                config_path = self.templates_dir / "default.py"
             
             spec = importlib.util.spec_from_file_location("template_config", config_path)
             config = importlib.util.module_from_spec(spec)
@@ -72,13 +75,17 @@ class LaTeXCompiler:
                 FONT_PACKAGES = ""
             return DefaultConfig()
     
-    def format_skills_section(self, skills_data):
+    def is_two_column_template(self, template_id):
+        """Check if template is a two-column variant"""
+        return template_id.endswith('_2col')
+    
+    def format_skills_section(self, skills_data, is_two_column=False):
         """Format skills data for LaTeX"""
         if not skills_data:
             return ""
         
+        # Use the same formatting for both single and two column
         if isinstance(skills_data, list):
-            # Simple list of skills
             skills_str = ", ".join([self.escape_latex_text(skill) for skill in skills_data])
             return f"""
 \\section{{Technical Skills}}
@@ -89,7 +96,6 @@ class LaTeXCompiler:
  \\end{{itemize}}
 """
         elif isinstance(skills_data, dict):
-            # Categorized skills
             skills_content = []
             for category, skills_list in skills_data.items():
                 if isinstance(skills_list, list):
@@ -108,10 +114,10 @@ class LaTeXCompiler:
     }}}}
  \\end{{itemize}}
 """
-        else:
-            # String or other format
-            escaped_skills = self.escape_latex_text(str(skills_data))
-            return f"""
+        
+        # Fallback
+        escaped_skills = self.escape_latex_text(str(skills_data))
+        return f"""
 \\section{{Technical Skills}}
  \\begin{{itemize}}[leftmargin=0.15in, label={{}}]
     \\small{{\\item{{
@@ -120,11 +126,12 @@ class LaTeXCompiler:
  \\end{{itemize}}
 """
     
-    def format_education_section(self, education_data):
+    def format_education_section(self, education_data, is_two_column=False):
         """Format education data for LaTeX"""
         if not education_data or not isinstance(education_data, list):
             return ""
         
+        # Use the same formatting for both single and two column
         edu_items = []
         for edu in education_data:
             institution = self.escape_latex_text(edu.get('institution', '') or edu.get('school', ''))
@@ -220,11 +227,21 @@ class LaTeXCompiler:
         # Load template configuration
         config = self.get_template_config(template_id)
         
-        # Read base template
-        with open(self.base_template_path, 'r') as f:
-            template_content = f.read()
+        # Determine if this is a two-column template
+        is_two_col = self.is_two_column_template(template_id)
         
-        # Extract data with fallbacks
+        # Read appropriate template
+        if is_two_col:
+            with open(self.two_column_template_path, 'r') as f:
+                template_content = f.read()
+            return self.generate_two_column_latex_content(resume_data, template_id, config, template_content)
+        else:
+            with open(self.base_template_path, 'r') as f:
+                template_content = f.read()
+            return self.generate_single_column_latex_content(resume_data, template_id, config, template_content)
+    
+    def generate_single_column_latex_content(self, resume_data, template_id, config, template_content):
+        """Generate single-column LaTeX content from resume data"""
         first_name = self.escape_latex_text(resume_data.get('first_name', ''))
         last_name = self.escape_latex_text(resume_data.get('last_name', ''))
         full_name = f"{first_name} {last_name}".strip() or "Name Not Provided"
@@ -278,6 +295,62 @@ class LaTeXCompiler:
         
         return template_content
     
+    def generate_two_column_latex_content(self, resume_data, template_id, config, template_content):
+        """Generate two-column LaTeX content from resume data"""
+        # Extract data with fallbacks
+        first_name = self.escape_latex_text(resume_data.get('first_name', ''))
+        last_name = self.escape_latex_text(resume_data.get('last_name', ''))
+        full_name = f"{first_name} {last_name}".strip() or "Name Not Provided"
+        
+        contact = resume_data.get('contact', {})
+        if isinstance(contact, dict):
+            email = self.escape_latex_text(contact.get('emails', [''])[0] if contact.get('emails') else '')
+            phone = self.escape_latex_text(contact.get('phones', [''])[0] if contact.get('phones') else '')
+        else:
+            email = ''
+            phone = ''
+        
+        career_objective = self.escape_latex_text(resume_data.get('career_objective', ''))
+        
+        # Format LinkedIn/GitHub section
+        linkedin_github = ""
+        # You can add LinkedIn/GitHub extraction logic here if available in your data
+        
+        # Format sections using the same logic as single column
+        education_section = self.format_education_section(resume_data.get('education', []))
+        experience_section = self.format_experience_section(resume_data.get('jobs', []))
+        skills_section = self.format_skills_section(resume_data.get('skills', {}))
+        
+        # Format career objective section
+        career_objective_section = ""
+        if career_objective:
+            career_objective_section = f"""
+\\section{{Career Objective}}
+{career_objective}
+"""
+        
+        # Replace template variables - using same logic as single column
+        replacements = {
+            '{{TEMPLATE_CUSTOMIZATIONS}}': config.TEMPLATE_CUSTOMIZATIONS,
+            '{{SECTION_COLOR}}': config.SECTION_COLOR,
+            '{{SECTION_UNDERLINE_COLOR}}': config.SECTION_UNDERLINE_COLOR,
+            '{{NAME_STYLE}}': config.NAME_STYLE,
+            '{{FULL_NAME}}': full_name,
+            '{{PHONE}}': phone,
+            '{{EMAIL}}': email,
+            '{{LINKEDIN_GITHUB_SECTION}}': linkedin_github,
+            '{{CAREER_OBJECTIVE_SECTION}}': career_objective_section,
+            '{{EDUCATION_SECTION}}': education_section,
+            '{{EXPERIENCE_SECTION}}': experience_section,
+            '{{SKILLS_SECTION}}': skills_section,
+        }
+        
+        # Apply replacements
+        for placeholder, value in replacements.items():
+            template_content = template_content.replace(placeholder, value)
+        
+        return template_content
+
     def compile_pdf(self, latex_content, template_id="default"):
         """Compile LaTeX content to PDF"""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -288,52 +361,72 @@ class LaTeXCompiler:
             with open(tex_file, 'w', encoding='utf-8') as f:
                 f.write(latex_content)
             
-            try:
-                # Compile LaTeX to PDF
-                result = subprocess.run([
-                    'pdflatex', 
-                    '-output-directory', str(temp_path),
-                    '-interaction=nonstopmode',
-                    str(tex_file)
-                ], capture_output=True, text=True, cwd=temp_dir)
-                
-                if result.returncode != 0:
-                    # Read LaTeX log for debugging
-                    log_file = temp_path / "resume.log"
-                    log_content = ""
-                    if log_file.exists():
-                        with open(log_file, 'r') as f:
-                            log_content = f.read()
+            # Choose compiler based on template type
+            is_two_col = self.is_two_column_template(template_id)
+            primary_compiler = 'xelatex' if is_two_col else 'pdflatex'
+            fallback_compiler = 'pdflatex'
+            
+            # List of compilers to try in order
+            compilers_to_try = [primary_compiler]
+            if primary_compiler != fallback_compiler:
+                compilers_to_try.append(fallback_compiler)
+            
+            last_error = None
+            
+            for compiler in compilers_to_try:
+                try:
+                    print(f"Attempting compilation with {compiler}...")
                     
-                    # Also save the generated LaTeX content for debugging
-                    debug_info = f"LaTeX compilation failed.\nSTDERR: {result.stderr}\nSTDOUT: {result.stdout}\nLog: {log_content}\n\nGenerated LaTeX content:\n{latex_content[:2000]}..."
-                    raise Exception(debug_info)
-                
-                # Read the generated PDF
-                pdf_file = temp_path / "resume.pdf"
-                if not pdf_file.exists():
-                    raise Exception("PDF file was not generated")
-                
-                with open(pdf_file, 'rb') as f:
-                    pdf_data = f.read()
-                
-                return pdf_data
-                
-            except FileNotFoundError:
-                raise Exception("pdflatex not found. Please install TeX Live or MiKTeX.")
-            except Exception as e:
-                if "LaTeX compilation failed" not in str(e):
-                    # Include LaTeX log for debugging
-                    log_file = temp_path / "resume.log"
-                    log_content = ""
-                    if log_file.exists():
-                        with open(log_file, 'r') as f:
-                            log_content = f.read()
+                    # Check if compiler exists
+                    compiler_check = subprocess.run(['which', compiler], capture_output=True, text=True)
+                    if compiler_check.returncode != 0:
+                        print(f"{compiler} not found, skipping...")
+                        continue
                     
-                    raise Exception(f"LaTeX compilation error: {str(e)}\nLog: {log_content}")
-                else:
-                    # Re-raise the detailed error we created above
-                    raise
+                    # Compile LaTeX to PDF
+                    result = subprocess.run([
+                        compiler, 
+                        '-output-directory', str(temp_path),
+                        '-interaction=nonstopmode',
+                        str(tex_file)
+                    ], capture_output=True, text=True, cwd=temp_dir)
+                    
+                    if result.returncode == 0:
+                        # Check if PDF was generated
+                        pdf_file = temp_path / "resume.pdf"
+                        if pdf_file.exists():
+                            print(f"✅ Successfully compiled with {compiler}")
+                            with open(pdf_file, 'rb') as f:
+                                pdf_data = f.read()
+                            return pdf_data
+                        else:
+                            print(f"❌ {compiler} completed but no PDF generated")
+                    else:
+                        print(f"❌ {compiler} compilation failed with return code {result.returncode}")
+                        
+                        # Read LaTeX log for debugging
+                        log_file = temp_path / "resume.log"
+                        log_content = ""
+                        if log_file.exists():
+                            with open(log_file, 'r') as f:
+                                log_content = f.read()
+                        
+                        last_error = f"LaTeX compilation failed with {compiler}.\nSTDERR: {result.stderr}\nSTDOUT: {result.stdout}\nLog excerpt: {log_content[-1000:] if log_content else 'No log available'}"
+                        
+                except FileNotFoundError:
+                    last_error = f"{compiler} not found on system"
+                    print(f"❌ {last_error}")
+                    continue
+                except Exception as e:
+                    last_error = f"Unexpected error with {compiler}: {str(e)}"
+                    print(f"❌ {last_error}")
+                    continue
+            
+            # If we get here, all compilers failed
+            if last_error:
+                raise Exception(f"All LaTeX compilation attempts failed. Last error: {last_error}\n\nGenerated LaTeX content:\n{latex_content[:2000]}...")
+            else:
+                raise Exception("No suitable LaTeX compiler found. Please install pdflatex or xelatex.")
     
     def generate_resume_pdf(self, resume_data, template_id="default"):
         """Main method to generate PDF from resume data"""
