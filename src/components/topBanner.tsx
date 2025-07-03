@@ -84,10 +84,16 @@ export default function TopBanner({ toggleSidePanel }: TopBannerProps) {
     "/home/completed_forms": "Completed Forms",
     "/home/job_posting": "Job Posting",
     "/home/job_ads": "Job Ads",
+    "/home/completed_resumes": "Job Applications",
   };
 
   const pageTitle =
-    pageTitles[pathname] || (pathname.startsWith("/home/resume_editor") ? "Resume Editor" : "Page");
+    pageTitles[pathname] || 
+    (pathname.startsWith("/home/resume_editor") ? "Resume Editor" : 
+     pathname.startsWith("/home/job_ads/") ? "Job Details" :
+     pathname.startsWith("/home/completed_resumes/") && pathname.includes("/format") ? "Resume Format" :
+     pathname.startsWith("/home/completed_resumes/") ? "Resume Details" :
+     "Page");
 
   const handleLogout = async () => {
     try {
