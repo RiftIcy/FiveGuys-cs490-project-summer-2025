@@ -77,6 +77,16 @@
     \end{tabular*}\vspace{-7pt}
 }
 
+% Two-column specific education command - puts year under university
+\newcommand{\resumeEducationTwoCol}[4]{
+  \vspace{-2pt}\item
+    \begin{tabular*}{\linewidth}[t]{l}
+      \textbf{#1} \\
+      \textit{\small#4} \\
+      \textit{\small#3}
+    \end{tabular*}\vspace{-7pt}
+}
+
 \newcommand{\resumeSubSubheading}[2]{
     \item
     \begin{tabular*}{\linewidth}{l@{\extracolsep{\fill}}r}
@@ -115,13 +125,13 @@
 \begin{multicols}{2}
 \raggedcolumns
 
-{{EDUCATION_SECTION}}
-
 {{EXPERIENCE_SECTION}}
 
 \columnbreak
 
 {{CAREER_OBJECTIVE_SECTION}}
+
+{{EDUCATION_SECTION}}
 
 {{SKILLS_SECTION}}
 

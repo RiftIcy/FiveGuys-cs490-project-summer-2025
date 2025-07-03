@@ -131,7 +131,7 @@ class LaTeXCompiler:
         if not education_data or not isinstance(education_data, list):
             return ""
         
-        # Use the same formatting for both single and two column
+        # Use different formatting for two column vs single column
         edu_items = []
         for edu in education_data:
             institution = self.escape_latex_text(edu.get('institution', '') or edu.get('school', ''))
@@ -149,7 +149,12 @@ class LaTeXCompiler:
             if start_date or end_date:
                 date_range = f"{start_date} -- {end_date}" if start_date and end_date else (end_date or start_date)
             
-            edu_item = f"    \\resumeSubheading\n      {{{institution}}}{{{location}}}\n      {{{degree}}}{{{date_range}}}"
+            if is_two_column:
+                # For two-column: institution, then year below, then degree
+                edu_item = f"    \\resumeEducationTwoCol\n      {{{institution}}}{{{location}}}\n      {{{degree}}}{{{date_range}}}"
+            else:
+                # For single column: original format
+                edu_item = f"    \\resumeSubheading\n      {{{institution}}}{{{location}}}\n      {{{degree}}}{{{date_range}}}"
             
             if gpa:
                 edu_item += f"\n      \\resumeItemListStart\n        \\resumeItem{{GPA: {gpa}}}\n      \\resumeItemListEnd"
@@ -316,10 +321,10 @@ class LaTeXCompiler:
         linkedin_github = ""
         # You can add LinkedIn/GitHub extraction logic here if available in your data
         
-        # Format sections using the same logic as single column
-        education_section = self.format_education_section(resume_data.get('education', []))
+        # Format sections using two-column specific formatting
+        education_section = self.format_education_section(resume_data.get('education', []), is_two_column=True)
         experience_section = self.format_experience_section(resume_data.get('jobs', []))
-        skills_section = self.format_skills_section(resume_data.get('skills', {}))
+        skills_section = self.format_skills_section(resume_data.get('skills', {}), is_two_column=True)
         
         # Format career objective section
         career_objective_section = ""

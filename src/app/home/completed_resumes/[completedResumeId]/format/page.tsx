@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Container, Title, Loader, Text, Stack, Card, Button, Group, Alert, ActionIcon, Tooltip, Collapse, SimpleGrid, Badge, Image, Switch, Divider } from "@mantine/core";
 import { useParams, useRouter } from "next/navigation";
 import { getAuth } from "firebase/auth";
-import { IconDownload, IconArrowBack, IconCheck, IconColumns1, IconColumns3 } from "@tabler/icons-react";
+import { IconDownload, IconArrowBack, IconCheck, IconColumns1, IconColumns2 } from "@tabler/icons-react";
 import { useTheme } from "@/context/themeContext";
 
 interface CompletedResume {
@@ -339,7 +339,7 @@ export default function FormatResumePage() {
                         </Text>
                         
                         {/* Column Layout Toggle */}
-                        <Card withBorder padding="md" style={{ backgroundColor: theme === 'night-sky' ? '#1a1b23' : '#f8f9fa' }}>
+                        <Card withBorder padding="md" style={{ backgroundColor: 'transparent', borderColor: theme === 'night-sky' ? '#4a5568' : theme === 'dark' ? '#4a5568' : undefined }}>
                             <Group justify="space-between" align="center">
                                 <Group gap="xs">
                                     <ActionIcon
@@ -347,7 +347,7 @@ export default function FormatResumePage() {
                                         color={themeStyles.primaryColor}
                                         size="lg"
                                     >
-                                        {isDoubleColumn ? <IconColumns3 size={20} /> : <IconColumns1 size={20} />}
+                                        {isDoubleColumn ? <IconColumns2 size={20} /> : <IconColumns1 size={20} />}
                                     </ActionIcon>
                                     <Stack gap={2}>
                                         <Text fw={500} size="sm">
@@ -366,7 +366,7 @@ export default function FormatResumePage() {
                                     size="md"
                                     thumbIcon={
                                         isDoubleColumn ? (
-                                            <IconColumns3 size={12} color={themeStyles.selectedBorder} />
+                                            <IconColumns2 size={12} color={themeStyles.selectedBorder} />
                                         ) : (
                                             <IconColumns1 size={12} color={themeStyles.selectedBorder} />
                                         )
