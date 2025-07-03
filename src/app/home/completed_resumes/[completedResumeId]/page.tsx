@@ -77,8 +77,8 @@ export default function CompletedResumePage() {
 
             if (!response.ok) throw new Error('Failed to format resume');
             
-            // Navigate to preview page (create this later)
-            router.push(`/home/completed_resumes/${completedResumeId}/preview`);
+            // Navigate to completed resumes list (same as sidebar)
+            router.push('/home/completed_resumes');
             
         } catch (error) {
             console.error('Error formatting resume:', error);

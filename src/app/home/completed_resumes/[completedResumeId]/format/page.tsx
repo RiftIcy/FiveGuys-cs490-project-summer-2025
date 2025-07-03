@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Container, Title, Loader, Text, Stack, Card, Button, Group, Alert, ActionIcon, Tooltip, Collapse, SimpleGrid, Badge, Image, Switch, Divider } from "@mantine/core";
+import { Container, Title, Loader, Text, Stack, Card, Button, Group, Alert, ActionIcon, Tooltip, Collapse, SimpleGrid, Badge, Image, Switch, Divider, Modal } from "@mantine/core";
 import { useParams, useRouter } from "next/navigation";
 import { getAuth } from "firebase/auth";
-import { IconDownload, IconArrowBack, IconCheck, IconColumns1, IconColumns2 } from "@tabler/icons-react";
+import { IconDownload, IconArrowBack, IconArrowForward, IconCheck, IconColumns1, IconColumns2 } from "@tabler/icons-react";
 import { useTheme } from "@/context/themeContext";
 
 interface CompletedResume {
@@ -51,6 +51,7 @@ export default function FormatResumePage() {
     // Column layout toggle state
     const [isDoubleColumn, setIsDoubleColumn] = useState(false);
     const [availableTemplates, setAvailableTemplates] = useState<Template[]>([]);
+    const [showContinueModal, setShowContinueModal] = useState(false);
 
     // Get theme-appropriate colors and styling
     const getThemeStyles = () => {
@@ -261,6 +262,39 @@ export default function FormatResumePage() {
         setHasSelectedTemplate(false);
     };
 
+    // Handle continue action (with or without template selection)
+    const handleContinue = async () => {
+        try {
+            let templateToUse = selectedTemplateId;
+            
+            // If no template selected, use default (first available)
+            if (!templateToUse && templates.length > 0) {
+                templateToUse = templates[0].id;
+                setSelectedTemplateId(templateToUse);
+            }
+
+            if (!templateToUse) {
+                setFormatError('No templates available');
+                setShowContinueModal(false);
+                return;
+            }
+
+            setShowContinueModal(false);
+            
+            // Start formatting in background (don't await)
+            if (data) {
+                formatResume(data); // No await - let it run in background
+            }
+            
+            // Navigate immediately to completed resumes page
+            router.push('/home/completed_resumes');
+        } catch (error) {
+            console.error('Continue error:', error);
+            setFormatError('Failed to continue with template selection');
+            setShowContinueModal(false);
+        }
+    };
+
     // RF002: Trigger POST /format_resume to the server (for re-formatting)
     const handleFormatResume = async () => {
         if (!data) return;
@@ -309,10 +343,19 @@ export default function FormatResumePage() {
         <Container size="xl" py="xl">
             <Group justify="space-between" mb="md">
                 <Button 
+                    size="md"
                     variant="subtle" 
                     onClick={() => router.push(`/home/completed_resumes/${completedResumeId}`)}
                 >
                     <IconArrowBack/>&nbsp;&nbsp;Resume
+                </Button>
+                
+                <Button
+                    variant="subtle"
+                    onClick={() => setShowContinueModal(true)}
+                    size="md"
+                >
+                    Continue&nbsp;&nbsp;<IconArrowForward />
                 </Button>
             </Group>
 
@@ -584,6 +627,50 @@ export default function FormatResumePage() {
                     </Stack>
                 </Card>
             )}
+
+            {/* Continue Modal */}
+            <Modal
+                opened={showContinueModal}
+                onClose={() => setShowContinueModal(false)}
+                title="Continue with Template"
+                centered
+                size="md"
+            >
+                <Stack gap="lg">
+                    {selectedTemplateId ? (
+                        <Text>
+                            Continue with the selected template:{" "}
+                            <Text component="span" fw={500} style={{ color: themeStyles.textColor }}>
+                                {templates.find(t => t.id === selectedTemplateId)?.name}
+                            </Text>
+                        </Text>
+                    ) : (
+                        <Text>
+                            No template selected. We'll use the default template:{" "}
+                            <Text component="span" fw={500} style={{ color: themeStyles.textColor }}>
+                                {templates.length > 0 ? templates[0].name : "Classic Professional (1 Column)"}
+                            </Text>
+                        </Text>
+                    )}
+                    
+                    <Group justify="space-between" mt="md">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowContinueModal(false)}
+                        >
+                            Cancel
+                        </Button>
+                        
+                        <Button
+                            color={themeStyles.primaryColor}
+                            onClick={handleContinue}
+                            loading={isFormatting}
+                        >
+                            Continue
+                        </Button>
+                    </Group>
+                </Stack>
+            </Modal>
         </Container>
     );
 }
