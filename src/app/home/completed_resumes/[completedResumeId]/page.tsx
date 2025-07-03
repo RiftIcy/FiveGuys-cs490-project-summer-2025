@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Container, Title, Loader, Text, Stack, Card, List, Group, Divider, Button, Tooltip } from "@mantine/core";
+import { Container, Title, Loader, Text, Stack, Card, List, Group, Divider, Button, Tooltip, Modal } from "@mantine/core";
 import { useParams, useRouter } from "next/navigation";
 import { getAuth } from "firebase/auth";
 
@@ -22,6 +22,7 @@ export default function CompletedResumePage() {
     const [data, setData] = useState<CompletedResume | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showFormatModal, setShowFormatModal] = useState(false);
 
     const getAuthHeaders = async () => {
         const auth = getAuth();
@@ -56,6 +57,36 @@ export default function CompletedResumePage() {
         }
     }, [completedResumeId]);
 
+    const handleQuickFormat = async () => {
+        try {
+            const authHeaders = await getAuthHeaders();
+            
+            const response = await fetch(`http://localhost:5000/format_resume`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...authHeaders,
+                },
+                body: JSON.stringify({
+                    resume_data: data?.tailored_resume,
+                    completed_resume_id: completedResumeId,
+                    job_title: data?.job_title,
+                    template_id: 'default_1col' // Default template
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to format resume');
+            
+            // Navigate to preview page (create this later)
+            router.push(`/home/completed_resumes/${completedResumeId}/preview`);
+            
+        } catch (error) {
+            console.error('Error formatting resume:', error);
+        } finally {
+            setShowFormatModal(false);
+        }
+    };
+
     if (loading) return <Container><Loader /></Container>;
     if (error || !data) return <Container><Text color="red">Error loading data</Text></Container>;
 
@@ -80,7 +111,7 @@ export default function CompletedResumePage() {
                         <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => router.push(`/home/completed_resumes/${completedResumeId}/format`)}
+                            onClick={() => setShowFormatModal(true)}
                         >
                             Format
                         </Button>
@@ -243,6 +274,69 @@ export default function CompletedResumePage() {
                     )}
                 </Stack>
             </Card>
+
+            {/* Format Options Modal */}
+            <Modal
+                opened={showFormatModal}
+                onClose={() => setShowFormatModal(false)}
+                title="Format Your Resume"
+                centered
+                size="md"
+            >
+                <Stack gap="lg">
+                    <Text>
+                        Choose how you'd like to format your resume:
+                    </Text>
+                    
+                    <Card withBorder p="md">
+                        <Stack gap="sm">
+                            <Text fw={500}>Quick Format (Recommended)</Text>
+                            <Text size="sm" color="dimmed">
+                                Apply our default professional template (Classic Professional, Single-column) 
+                                and proceed directly to download.
+                            </Text>
+                        </Stack>
+                    </Card>
+                    
+                    <Card withBorder p="md">
+                        <Stack gap="sm">
+                            <Text fw={500}>Custom Format</Text>
+                            <Text size="sm" color="dimmed">
+                                Choose from multiple templates and customize the layout 
+                                (single or double column) to match your preferences.
+                            </Text>
+                        </Stack>
+                    </Card>
+                    
+                    <Group justify="space-between" mt="md">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowFormatModal(false)}
+                        >
+                            Cancel
+                        </Button>
+                        
+                        <Group gap="sm">
+                            <Button
+                                variant="filled"
+                                onClick={handleQuickFormat}
+                            >
+                                Quick Format
+                            </Button>
+                            
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setShowFormatModal(false);
+                                    router.push(`/home/completed_resumes/${completedResumeId}/format`);
+                                }}
+                            >
+                                Custom Format
+                            </Button>
+                        </Group>
+                    </Group>
+                </Stack>
+            </Modal>
         </Container>
     );
 }
