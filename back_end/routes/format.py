@@ -5,10 +5,107 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
+from reportlab.lib.colors import HexColor
 from io import BytesIO
 import base64
 
 format_bp = Blueprint("format", __name__)
+
+def get_template_styles(template_id, base_styles):
+    """
+    Get template-specific styles based on template ID.
+    TP003: Build LaTeX-based formatting engine (using ReportLab for now)
+    """
+    if template_id == "modern":
+        title_style = ParagraphStyle(
+            'ModernTitle',
+            parent=base_styles['Heading1'],
+            fontSize=20,
+            spaceAfter=15,
+            alignment=0,  # Left alignment
+            textColor=HexColor('#2c3e50'),
+            fontName='Helvetica-Bold'
+        )
+        
+        heading_style = ParagraphStyle(
+            'ModernHeading',
+            parent=base_styles['Heading2'],
+            fontSize=15,
+            spaceAfter=8,
+            spaceBefore=15,
+            textColor=HexColor('#34495e'),
+            fontName='Helvetica-Bold',
+            borderWidth=1,
+            borderColor=HexColor('#3498db'),
+            borderPadding=5
+        )
+        
+    elif template_id == "classic":
+        title_style = ParagraphStyle(
+            'ClassicTitle',
+            parent=base_styles['Heading1'],
+            fontSize=18,
+            spaceAfter=12,
+            alignment=1,  # Center alignment
+            textColor=colors.black,
+            fontName='Times-Bold'
+        )
+        
+        heading_style = ParagraphStyle(
+            'ClassicHeading',
+            parent=base_styles['Heading2'],
+            fontSize=14,
+            spaceAfter=6,
+            spaceBefore=12,
+            textColor=colors.black,
+            fontName='Times-Bold'
+        )
+        
+    elif template_id == "creative":
+        title_style = ParagraphStyle(
+            'CreativeTitle',
+            parent=base_styles['Heading1'],
+            fontSize=22,
+            spaceAfter=18,
+            alignment=0,  # Left alignment
+            textColor=HexColor('#e74c3c'),
+            fontName='Helvetica-Bold'
+        )
+        
+        heading_style = ParagraphStyle(
+            'CreativeHeading',
+            parent=base_styles['Heading2'],
+            fontSize=16,
+            spaceAfter=8,
+            spaceBefore=15,
+            textColor=HexColor('#9b59b6'),
+            fontName='Helvetica-Bold',
+            leftIndent=10
+        )
+        
+    else:  # default template
+        title_style = ParagraphStyle(
+            'DefaultTitle',
+            parent=base_styles['Heading1'],
+            fontSize=18,
+            spaceAfter=12,
+            alignment=1,  # Center alignment
+            textColor=colors.black
+        )
+        
+        heading_style = ParagraphStyle(
+            'DefaultHeading',
+            parent=base_styles['Heading2'],
+            fontSize=14,
+            spaceAfter=6,
+            spaceBefore=12,
+            textColor=colors.black
+        )
+    
+    return {
+        'title_style': title_style,
+        'heading_style': heading_style
+    }
 
 @format_bp.route("/format_resume", methods=["POST"])
 @require_firebase_auth
@@ -24,6 +121,7 @@ def format_resume():
         resume_data = data.get("resume_data")
         completed_resume_id = data.get("completed_resume_id")
         job_title = data.get("job_title", "Resume")
+        template_id = data.get("template_id", "default")  # Default template if not specified
         
         if not resume_data:
             return jsonify({"error": "Missing resume_data"}), 400
@@ -43,23 +141,10 @@ def format_resume():
         story = []
         styles = getSampleStyleSheet()
         
-        # Custom styles
-        title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Heading1'],
-            fontSize=18,
-            spaceAfter=12,
-            alignment=1  # Center alignment
-        )
-        
-        heading_style = ParagraphStyle(
-            'CustomHeading',
-            parent=styles['Heading2'],
-            fontSize=14,
-            spaceAfter=6,
-            spaceBefore=12,
-            textColor=colors.black
-        )
+        # Get template-specific styles
+        template_styles = get_template_styles(template_id, styles)
+        title_style = template_styles['title_style']
+        heading_style = template_styles['heading_style']
         
         # Name
         if resume_data.get("first_name") or resume_data.get("last_name"):

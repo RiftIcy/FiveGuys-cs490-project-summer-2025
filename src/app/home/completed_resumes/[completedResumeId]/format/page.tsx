@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Container, Title, Loader, Text, Stack, Card, Button, Group, Alert, ActionIcon, Tooltip, Collapse } from "@mantine/core";
+import { Container, Title, Loader, Text, Stack, Card, Button, Group, Alert, ActionIcon, Tooltip, Collapse, SimpleGrid, Badge, Image } from "@mantine/core";
 import { useParams, useRouter } from "next/navigation";
 import { getAuth } from "firebase/auth";
-import { IconDownload, IconArrowBack } from "@tabler/icons-react";
+import { IconDownload, IconArrowBack, IconCheck } from "@tabler/icons-react";
+import { useTheme } from "@/context/themeContext";
 
 interface CompletedResume {
     _id: string;
@@ -17,9 +18,18 @@ interface CompletedResume {
     job_ad_data: any;
 }
 
+interface Template {
+    id: string;
+    name: string;
+    description?: string;
+    imageUrl?: string;
+    isDefault?: boolean;
+}
+
 export default function FormatResumePage() {
     const { completedResumeId } = useParams();
     const router = useRouter();
+    const { theme } = useTheme(); // Get current theme
     const [data, setData] = useState<CompletedResume | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -28,6 +38,34 @@ export default function FormatResumePage() {
     const [filename, setFilename] = useState<string>('Resume.pdf');
     const [formatError, setFormatError] = useState<string | null>(null);
     const [showPreview, setShowPreview] = useState(true); // State to toggle PDF preview
+    
+    // Template selection state
+    const [templates, setTemplates] = useState<Template[]>([]);
+    const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+    const [loadingTemplates, setLoadingTemplates] = useState(true);
+    const [templateError, setTemplateError] = useState<string | null>(null);
+    const [hasSelectedTemplate, setHasSelectedTemplate] = useState(false);
+
+    // Get theme-appropriate colors and styling
+    const getThemeStyles = () => {
+        if (theme === 'night-sky') {
+            return {
+                primaryColor: 'nightSky',
+                selectedBorder: '#8b5cf6',
+                unselectedBorder: '#374151',
+                textColor: '#8b5cf6'
+            };
+        } else {
+            return {
+                primaryColor: 'blue',
+                selectedBorder: '#228be6',
+                unselectedBorder: '#e9ecef',
+                textColor: '#228be6'
+            };
+        }
+    };
+
+    const themeStyles = getThemeStyles();
 
     const getAuthHeaders = async () => {
         const auth = getAuth();
@@ -51,8 +89,8 @@ export default function FormatResumePage() {
                 const result = await response.json();
                 setData(result);
                 
-                // Automatically format the resume after fetching data
-                await formatResume(result, authHeaders);
+                // Don't automatically format - wait for template selection
+                // await formatResume(result, authHeaders);
             } catch (err) {
                 setError(err instanceof Error ? err.message : String(err));
             } finally {
@@ -60,18 +98,67 @@ export default function FormatResumePage() {
             }
         }
         
+        async function fetchTemplates() {
+            try {
+                const authHeaders = await getAuthHeaders();
+                
+                console.log('📋 Fetching templates...'); // Debug log
+                
+                const response = await fetch(
+                    'http://localhost:5000/api/templates',
+                    { headers: authHeaders }
+                );
+                
+                if (!response.ok) throw new Error('Failed to fetch templates');
+                const result = await response.json();
+                
+                console.log('✅ Templates received:', result.templates); // Debug log
+                
+                setTemplates(result.templates || []);
+                
+                // Set default template if available
+                const defaultTemplate = result.templates?.find((t: Template) => t.isDefault);
+                if (defaultTemplate) {
+                    setSelectedTemplateId(defaultTemplate.id);
+                    console.log('🎯 Default template selected:', defaultTemplate.id); // Debug log
+                }
+            } catch (err) {
+                console.error('❌ Template fetch error:', err); // Debug log
+                setTemplateError(err instanceof Error ? err.message : 'Failed to load templates');
+                // Fallback: create a default template option
+                setTemplates([{
+                    id: 'default',
+                    name: 'Default Template',
+                    description: 'Clean and professional resume format',
+                    isDefault: true
+                }]);
+                setSelectedTemplateId('default');
+                console.log('🔄 Using fallback template'); // Debug log
+            } finally {
+                setLoadingTemplates(false);
+            }
+        }
+        
         if (completedResumeId) {
             fetchCompletedResume();
+            fetchTemplates();
         }
     }, [completedResumeId]);
 
     // Function to format resume (extracted for reuse)
     const formatResume = async (resumeData: CompletedResume, authHeaders?: any) => {
+        if (!selectedTemplateId) {
+            setFormatError('Please select a template before formatting');
+            return;
+        }
+
         setIsFormatting(true);
         setFormatError(null);
 
         try {
             const headers = authHeaders || await getAuthHeaders();
+            
+            console.log('🎨 Formatting with template:', selectedTemplateId); // Debug log
             
             const response = await fetch('http://localhost:5000/format_resume', {
                 method: 'POST',
@@ -83,6 +170,7 @@ export default function FormatResumePage() {
                     resume_data: resumeData.tailored_resume,
                     completed_resume_id: completedResumeId,
                     job_title: resumeData.job_title,
+                    template_id: selectedTemplateId, // Include selected template
                 }),
             });
 
@@ -93,14 +181,26 @@ export default function FormatResumePage() {
 
             const result = await response.json();
             
+            console.log('✅ Format response:', result); // Debug log
+            
             if (result.downloadUrl) {
                 setDownloadUrl(result.downloadUrl);
+                setHasSelectedTemplate(true);
             }
         } catch (error) {
+            console.error('❌ Format error:', error); // Debug log
             setFormatError(error instanceof Error ? error.message : 'Unknown error occurred');
         } finally {
             setIsFormatting(false);
         }
+    };
+
+    // Handle template selection
+    const handleTemplateSelect = (templateId: string) => {
+        console.log('🎨 Template selected:', templateId); // Debug log
+        setSelectedTemplateId(templateId);
+        setDownloadUrl(null); // Clear any existing download
+        setHasSelectedTemplate(false); // Reset formatting state
     };
 
     // RF002: Trigger POST /format_resume to the server (for re-formatting)
@@ -116,13 +216,29 @@ export default function FormatResumePage() {
         }
     }, [data]);
 
-    if (loading || isFormatting) {
+    if (loading || loadingTemplates) {
         return (
             <Container>
                 <Stack align="center" gap="md" py="xl">
                     <Loader size="lg" />
                     <Text>
-                        {loading ? "Loading resume..." : "Formatting your resume..."}
+                        {loading ? "Loading resume..." : "Loading templates..."}
+                    </Text>
+                </Stack>
+            </Container>
+        );
+    }
+
+    if (isFormatting) {
+        return (
+            <Container>
+                <Stack align="center" gap="md" py="xl">
+                    <Loader size="lg" />
+                    <Text>
+                        Formatting your resume with {templates.find(t => t.id === selectedTemplateId)?.name || 'selected template'}...
+                    </Text>
+                    <Text size="sm" color="dimmed">
+                        This may take a moment
                     </Text>
                 </Stack>
             </Container>
@@ -150,6 +266,113 @@ export default function FormatResumePage() {
                 Created: {new Date(data.created_at).toLocaleString()}
             </Text>
 
+            {/* Template Selection Section */}
+            {!hasSelectedTemplate && (
+                <Card shadow="sm" padding="lg" mb="md">
+                    <Stack gap="md">
+                        <Title order={3}>Choose a Template</Title>
+                        <Text size="sm" color="dimmed">
+                            Select how you want your resume to look before formatting.
+                            {selectedTemplateId && (
+                                <Text component="span" fw={500} style={{ color: themeStyles.textColor }} ml="xs">
+                                    Current: {templates.find(t => t.id === selectedTemplateId)?.name}
+                                </Text>
+                            )}
+                        </Text>
+                        
+                        {templateError && (
+                            <Alert color="yellow" title="Template Loading Warning">
+                                {templateError}. Using default template.
+                            </Alert>
+                        )}
+                        
+                        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
+                            {templates.map((template) => {
+                                const isSelected = selectedTemplateId === template.id;
+                                const isNightSky = theme === 'night-sky';
+                                return (
+                                    <Card
+                                        key={template.id}
+                                        padding="md"
+                                        shadow="sm"
+                                        withBorder
+                                        style={{
+                                            cursor: 'pointer',
+                                            border: isSelected
+                                                ? `3px solid ${themeStyles.selectedBorder}`
+                                                : `2px solid ${themeStyles.unselectedBorder}`,
+                                            position: 'relative',
+                                            transition: 'border 0.2s ease, outline 0.2s ease',
+                                            borderRadius: '8px',
+                                            outline: isSelected && isNightSky ? '3px solid #a78bfa' : undefined,
+                                            outlineOffset: isSelected && isNightSky ? '2px' : undefined,
+                                        }}
+                                        onClick={() => handleTemplateSelect(template.id)}
+                                    >
+                                        {isSelected && (
+                                            <Badge
+                                                color={themeStyles.primaryColor}
+                                                variant="filled"
+                                                style={{
+                                                    position: 'absolute',
+                                                    bottom: 8,
+                                                    right: 8,
+                                                    zIndex: 1
+                                                }}
+                                            >
+                                                <IconCheck size={12} />
+                                            </Badge>
+                                        )}
+                                        
+                                        {template.imageUrl && (
+                                            <Image
+                                                src={template.imageUrl}
+                                                alt={`${template.name} preview`}
+                                                height={120}
+                                                fit="cover"
+                                                radius="sm"
+                                                mb="sm"
+                                            />
+                                        )}
+                                        
+                                        <Stack gap="xs">
+                                            <Group justify="space-between" align="flex-start">
+                                                <Text fw={500} size="sm">
+                                                    {template.name}
+                                                </Text>
+                                                {template.isDefault && (
+                                                    <Badge size="xs" color="green" variant="light">
+                                                        Default
+                                                    </Badge>
+                                                )}
+                                            </Group>
+                                            
+                                            {template.description && (
+                                                <Text size="xs" color="dimmed">
+                                                    {template.description}
+                                                </Text>
+                                            )}
+                                        </Stack>
+                                    </Card>
+                                );
+                            })}
+                        </SimpleGrid>
+                        
+                        <Group justify="center" mt="md">
+                            <Button
+                                color={themeStyles.primaryColor}
+                                onClick={() => data && formatResume(data)}
+                                disabled={!selectedTemplateId || isFormatting}
+                                loading={isFormatting}
+                                size="md"
+                            >
+                                {isFormatting ? 'Formatting Resume...' : 'Format Resume with Selected Template'}
+                            </Button>
+                        </Group>
+                    </Stack>
+                </Card>
+            )}
+
             {formatError && (
                 <Alert color="red" title="Error" mb="md">
                     {formatError}
@@ -164,7 +387,7 @@ export default function FormatResumePage() {
                 </Alert>
             )}
 
-            {downloadUrl && (
+            {downloadUrl && hasSelectedTemplate && (
                 <Card shadow="sm" padding="lg" mb="md">
                     <Stack gap="md">
                         <Group justify="space-between">
@@ -191,6 +414,15 @@ export default function FormatResumePage() {
                                 </Button>
                             </Tooltip>
                             <Group gap="xs">
+                                <Button 
+                                    variant="outline"
+                                    onClick={() => {
+                                        setHasSelectedTemplate(false);
+                                        setDownloadUrl(null);
+                                    }}
+                                >
+                                    Change Template
+                                </Button>
                                 <Button 
                                     variant="outline"
                                     onClick={handleFormatResume}
