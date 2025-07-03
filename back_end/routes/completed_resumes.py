@@ -31,7 +31,10 @@ def get_completed_resume(completed_resume_id):
             "tailored_resume": doc["tailored_resume"],
             "source_resume_ids": doc.get("source_resume_ids", []),
             "source_resume_names": doc.get("source_resume_names", []),
-            "job_ad_data": doc["job_ad_data"]
+            "job_ad_data": doc["job_ad_data"],
+            "status": doc.get("status"),
+            "applied_at": doc.get("applied_at").isoformat() if doc.get("applied_at") else None,
+            "formatted_pdf_url": doc.get("formatted_pdf_url")
         }), 200
         
     except Exception as e:

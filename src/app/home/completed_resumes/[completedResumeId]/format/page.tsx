@@ -110,6 +110,13 @@ export default function FormatResumePage() {
                 const result = await response.json();
                 setData(result);
                 
+                // If this resume has already been applied (has status and formatted_pdf_url), show the PDF
+                if (result.status === 'applied' && result.formatted_pdf_url) {
+                    setDownloadUrl(result.formatted_pdf_url);
+                    setHasSelectedTemplate(true);
+                    setShowPreview(true);
+                }
+                
                 // Don't automatically format - wait for template selection
                 // await formatResume(result, authHeaders);
             } catch (err) {

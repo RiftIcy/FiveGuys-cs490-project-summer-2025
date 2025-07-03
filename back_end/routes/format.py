@@ -46,6 +46,17 @@ def format_resume():
             safe_job_title = job_title.replace(' ', '_').replace('/', '_').replace('\\', '_')
             filename = f"{safe_job_title}_{template_id}_resume.pdf"
         
+        # If completed_resume_id provided, update the document with the PDF URL
+        if completed_resume_id:
+            from db import completed_resumes_collection
+            from bson import ObjectId
+            
+            if ObjectId.is_valid(completed_resume_id):
+                completed_resumes_collection.update_one(
+                    {"_id": ObjectId(completed_resume_id), "user_id": request.user_id},
+                    {"$set": {"formatted_pdf_url": download_url, "formatted_filename": filename}}
+                )
+        
         return jsonify({
             "message": "Resume formatted successfully",
             "downloadUrl": download_url,

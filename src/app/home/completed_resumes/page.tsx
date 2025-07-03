@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Container, Title, Loader, Text, Stack, Card, Group, Button, Badge, ActionIcon, Tooltip } from "@mantine/core";
+import { Container, Title, Loader, Text, Stack, Card, Group, Button, Badge, ActionIcon, Tooltip, Modal } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { getAuth } from "firebase/auth";
-import { IconEye, IconDownload, IconBriefcase } from "@tabler/icons-react";
+import { IconEye, IconDownload, IconBriefcase, IconX } from "@tabler/icons-react";
 import { useTheme } from "@/context/themeContext";
 
 interface JobApplication {
@@ -25,6 +25,9 @@ export default function JobApplicationsPage() {
     const [applications, setApplications] = useState<JobApplication[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [pdfModalOpen, setPdfModalOpen] = useState(false);
+    const [selectedPdfUrl, setSelectedPdfUrl] = useState<string | null>(null);
+    const [selectedPdfTitle, setSelectedPdfTitle] = useState<string>("");
 
     // Get theme-appropriate colors
     const getThemeStyles = () => {
@@ -85,6 +88,14 @@ export default function JobApplicationsPage() {
             hour: '2-digit',
             minute: '2-digit'
         });
+    };
+
+    const handleViewPdf = (application: JobApplication) => {
+        if (application.formatted_pdf_url) {
+            setSelectedPdfUrl(application.formatted_pdf_url);
+            setSelectedPdfTitle(`${application.job_title} at ${application.company}`);
+            setPdfModalOpen(true);
+        }
     };
 
     if (loading) {
@@ -182,7 +193,7 @@ export default function JobApplicationsPage() {
                                             variant="light"
                                             color={themeStyles.primaryColor}
                                             size="lg"
-                                            onClick={() => router.push(`/home/completed_resumes/${application._id}`)}
+                                            onClick={() => handleViewPdf(application)}
                                         >
                                             <IconEye size={18} />
                                         </ActionIcon>
@@ -201,6 +212,7 @@ export default function JobApplicationsPage() {
                                                     link.click();
                                                 }
                                             }}
+                                            disabled={!application.formatted_pdf_url}
                                         >
                                             <IconDownload size={18} />
                                         </ActionIcon>
@@ -211,6 +223,47 @@ export default function JobApplicationsPage() {
                     ))}
                 </Stack>
             )}
+
+            {/* PDF Viewing Modal */}
+            <Modal
+                opened={pdfModalOpen}
+                onClose={() => setPdfModalOpen(false)}
+                title={
+                    <Group gap="xs">
+                        <IconEye size={20} />
+                        <Text fw={500}>Resume PDF - {selectedPdfTitle}</Text>
+                    </Group>
+                }
+                size="90%"
+                centered
+                padding="lg"
+                styles={{
+                    content: { height: '90vh' },
+                    body: { height: 'calc(100% - 60px)', padding: 0 }
+                }}
+            >
+                {selectedPdfUrl ? (
+                    <div style={{ 
+                        width: '100%', 
+                        height: '100%',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '8px',
+                        overflow: 'hidden'
+                    }}>
+                        <iframe
+                            src={selectedPdfUrl}
+                            width="100%"
+                            height="100%"
+                            style={{ border: 'none' }}
+                            title={`Resume PDF - ${selectedPdfTitle}`}
+                        />
+                    </div>
+                ) : (
+                    <Stack align="center" gap="md" py="xl">
+                        <Text color="dimmed">No PDF available for this application</Text>
+                    </Stack>
+                )}
+            </Modal>
         </Container>
     );
 }
