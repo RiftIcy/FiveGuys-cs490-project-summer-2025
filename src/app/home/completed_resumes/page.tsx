@@ -118,7 +118,16 @@ export default function JobApplicationsPage() {
     }
 
     return (
-        <Container size="lg" py="xl">
+        <Container 
+            size="lg" 
+            py="xl" 
+            style={{ 
+                height: 'calc(100vh - 80px)', // Account for navbar height
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column'
+            }}
+        >
             <Group justify="space-between" align="center" mb="xl">
                 <div>
                     <Title order={2} mb="xs">Job Applications</Title>
@@ -137,92 +146,99 @@ export default function JobApplicationsPage() {
             </Group>
 
             {/* JT007: Handle empty applications list */}
-            {applications.length === 0 ? (
-                <Card shadow="sm" padding="xl" radius="md" withBorder>
-                    <Stack align="center" gap="md" py="xl">
-                        <IconBriefcase size={64} color="#adb5bd" />
-                        <Title order={3} ta="center" c="dimmed">
-                            No job applications submitted yet
-                        </Title>
-                        <Text ta="center" color="dimmed" maw={400}>
-                            Start your job search journey by creating tailored resumes for specific positions. 
-                            Once you click "Continue" or "Quick Format", it will appear here as a job application.
-                        </Text>
-                        <Button 
-                            variant="light" 
-                            color={themeStyles.primaryColor}
-                            onClick={() => router.push('/home/job_posting')}
-                            mt="md"
-                        >
-                            Find Job Opportunities
-                        </Button>
-                    </Stack>
-                </Card>
-            ) : (
-                /* JT001: Display job applications */
-                <Stack gap="md">
-                    {applications.map((application) => (
-                        <Card key={application._id} shadow="sm" padding="lg" radius="md" withBorder>
-                            <Group justify="space-between" align="flex-start">
-                                <div style={{ flex: 1 }}>
-                                    <Group gap="sm" mb="xs">
-                                        <Title order={4} style={{ color: themeStyles.accentColor }}>
-                                            {application.job_title}
-                                        </Title>
-                                        <Badge size="sm" variant="light" color="green">
-                                            Applied
-                                        </Badge>
+            <div style={{ 
+                flex: 1, 
+                overflow: 'auto',
+                paddingRight: '8px',
+                marginRight: '-8px'
+            }}>
+                {applications.length === 0 ? (
+                    <Card shadow="sm" padding="xl" radius="md" withBorder>
+                        <Stack align="center" gap="md" py="xl">
+                            <IconBriefcase size={64} color="#adb5bd" />
+                            <Title order={3} ta="center" c="dimmed">
+                                No job applications submitted yet
+                            </Title>
+                            <Text ta="center" color="dimmed" maw={400}>
+                                Start your job search journey by creating tailored resumes for specific positions. 
+                                Once you click "Continue" or "Quick Format", it will appear here as a job application.
+                            </Text>
+                            <Button 
+                                variant="light" 
+                                color={themeStyles.primaryColor}
+                                onClick={() => router.push('/home/job_posting')}
+                                mt="md"
+                            >
+                                Find Job Opportunities
+                            </Button>
+                        </Stack>
+                    </Card>
+                ) : (
+                    /* JT001: Display job applications */
+                    <Stack gap="md">
+                        {applications.map((application) => (
+                            <Card key={application._id} shadow="sm" padding="lg" radius="md" withBorder>
+                                <Group justify="space-between" align="flex-start">
+                                    <div style={{ flex: 1 }}>
+                                        <Group gap="sm" mb="xs">
+                                            <Title order={4} style={{ color: themeStyles.accentColor }}>
+                                                {application.job_title}
+                                            </Title>
+                                            <Badge size="sm" variant="light" color="green">
+                                                Applied
+                                            </Badge>
+                                        </Group>
+                                        
+                                        <Text fw={500} mb="xs">
+                                            {application.company}
+                                        </Text>
+                                        
+                                        <Text size="sm" color="dimmed" mb="sm">
+                                            Applied: {formatDate(application.applied_at)}
+                                        </Text>
+                                        
+                                        <Text size="sm" color="dimmed">
+                                            Resume sources: {application.source_resume_names.join(", ")}
+                                        </Text>
+                                    </div>
+                                    
+                                    <Group gap="xs">
+                                        <Tooltip label="View formatted resume PDF">
+                                            <ActionIcon
+                                                variant="light"
+                                                color={themeStyles.primaryColor}
+                                                size="lg"
+                                                onClick={() => handleViewPdf(application)}
+                                            >
+                                                <IconEye size={18} />
+                                            </ActionIcon>
+                                        </Tooltip>
+                                        
+                                        <Tooltip label="Download resume PDF">
+                                            <ActionIcon
+                                                variant="light"
+                                                color="green"
+                                                size="lg"
+                                                onClick={() => {
+                                                    if (application.formatted_pdf_url) {
+                                                        const link = document.createElement('a');
+                                                        link.href = application.formatted_pdf_url;
+                                                        link.download = `${application.job_title}_${application.company}.pdf`;
+                                                        link.click();
+                                                    }
+                                                }}
+                                                disabled={!application.formatted_pdf_url}
+                                            >
+                                                <IconDownload size={18} />
+                                            </ActionIcon>
+                                        </Tooltip>
                                     </Group>
-                                    
-                                    <Text fw={500} mb="xs">
-                                        {application.company}
-                                    </Text>
-                                    
-                                    <Text size="sm" color="dimmed" mb="sm">
-                                        Applied: {formatDate(application.applied_at)}
-                                    </Text>
-                                    
-                                    <Text size="sm" color="dimmed">
-                                        Resume sources: {application.source_resume_names.join(", ")}
-                                    </Text>
-                                </div>
-                                
-                                <Group gap="xs">
-                                    <Tooltip label="View formatted resume PDF">
-                                        <ActionIcon
-                                            variant="light"
-                                            color={themeStyles.primaryColor}
-                                            size="lg"
-                                            onClick={() => handleViewPdf(application)}
-                                        >
-                                            <IconEye size={18} />
-                                        </ActionIcon>
-                                    </Tooltip>
-                                    
-                                    <Tooltip label="Download resume PDF">
-                                        <ActionIcon
-                                            variant="light"
-                                            color="green"
-                                            size="lg"
-                                            onClick={() => {
-                                                if (application.formatted_pdf_url) {
-                                                    const link = document.createElement('a');
-                                                    link.href = application.formatted_pdf_url;
-                                                    link.download = `${application.job_title}_${application.company}.pdf`;
-                                                    link.click();
-                                                }
-                                            }}
-                                            disabled={!application.formatted_pdf_url}
-                                        >
-                                            <IconDownload size={18} />
-                                        </ActionIcon>
-                                    </Tooltip>
                                 </Group>
-                            </Group>
-                        </Card>
-                    ))}
-                </Stack>
-            )}
+                            </Card>
+                        ))}
+                    </Stack>
+                )}
+            </div>
 
             {/* PDF Viewing Modal */}
             <Modal
