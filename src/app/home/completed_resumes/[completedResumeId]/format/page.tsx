@@ -281,6 +281,13 @@ export default function FormatResumePage() {
 
             setShowContinueModal(false);
             
+            // Mark as applied first
+            const authHeaders = await getAuthHeaders();
+            await fetch(`http://localhost:5000/completed_resumes/${completedResumeId}/apply`, {
+                method: 'POST',
+                headers: authHeaders
+            });
+            
             // Start formatting in background (don't await)
             if (data) {
                 formatResume(data); // No await - let it run in background

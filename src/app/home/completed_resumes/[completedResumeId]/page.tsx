@@ -61,6 +61,13 @@ export default function CompletedResumePage() {
         try {
             const authHeaders = await getAuthHeaders();
             
+            // Mark as applied first
+            await fetch(`http://localhost:5000/completed_resumes/${completedResumeId}/apply`, {
+                method: 'POST',
+                headers: authHeaders
+            });
+            
+            // Format with default template in background
             const response = await fetch(`http://localhost:5000/format_resume`, {
                 method: 'POST',
                 headers: {
