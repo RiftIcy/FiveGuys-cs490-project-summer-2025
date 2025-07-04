@@ -172,7 +172,7 @@ class LaTeXCompiler:
 """
     
     def format_experience_section(self, jobs_data):
-        """Format work experience data for LaTeX"""
+        """Format work experience data for LaTeX with intelligent content optimization"""
         if not jobs_data or not isinstance(jobs_data, list):
             return ""
         
@@ -183,7 +183,7 @@ class LaTeXCompiler:
             location = self.escape_latex_text(job.get('location', ''))
             start_date = self.escape_latex_text(job.get('start_date', ''))
             end_date = self.escape_latex_text(job.get('end_date', 'Present'))
-            role_summary = self.escape_latex_text(job.get('role_summary', '') or job.get('summary', '') or job.get('description', ''))
+            role_summary = job.get('role_summary', '') or job.get('summary', '') or job.get('description', '')
             responsibilities = job.get('responsibilities', [])
             accomplishments = job.get('accomplishments', [])
             
@@ -195,22 +195,29 @@ class LaTeXCompiler:
             
             job_item = f"    \\resumeSubheading\n      {{{title}}}{{{date_range}}}\n      {{{company}}}{{{location}}}"
             
-            # Add responsibilities and accomplishments
+            # Add responsibilities and accomplishments with intelligent optimization
             items = []
+            
+            # Optimize role summary with more generous length for complete sentences
             if role_summary:
-                items.append(f"        \\resumeItem{{{role_summary}}}")
+                optimized_summary = self.optimize_content_for_single_page(role_summary, 180)
+                escaped_summary = self.escape_latex_text(optimized_summary)
+                items.append(f"        \\resumeItem{{{escaped_summary}}}")
             
+            # Combine and optimize responsibilities/accomplishments
+            all_items = []
             if isinstance(responsibilities, list):
-                for resp in responsibilities:
-                    if resp and str(resp).strip():
-                        escaped_resp = self.escape_latex_text(str(resp).strip())
-                        items.append(f"        \\resumeItem{{{escaped_resp}}}")
-            
+                all_items.extend([str(r).strip() for r in responsibilities if r and str(r).strip()])
             if isinstance(accomplishments, list):
-                for acc in accomplishments:
-                    if acc and str(acc).strip():
-                        escaped_acc = self.escape_latex_text(str(acc).strip())
-                        items.append(f"        \\resumeItem{{{escaped_acc}}}")
+                all_items.extend([str(a).strip() for a in accomplishments if a and str(a).strip()])
+            
+            # Use optimized formatting for bullet points with more generous length
+            optimized_bullets = self.format_job_description_optimized(all_items, max_bullets=4, max_bullet_length=180)
+            
+            for bullet in optimized_bullets:
+                if bullet:
+                    escaped_bullet = self.escape_latex_text(bullet)
+                    items.append(f"        \\resumeItem{{{escaped_bullet}}}")
             
             if items:
                 job_item += "\n      \\resumeItemListStart\n" + "\n".join(items) + "\n      \\resumeItemListEnd"
@@ -446,3 +453,132 @@ class LaTeXCompiler:
             
         except Exception as e:
             raise Exception(f"Resume generation failed: {str(e)}")
+    
+    def optimize_content_for_single_page(self, text, max_length=None):
+        """Optimize content length for single-page layout while maintaining complete sentences"""
+        if not text or not max_length:
+            return text
+        
+        # If text is within limit, return as is
+        if len(text) <= max_length:
+            return text
+        
+        # Clean up the text first
+        text = text.strip()
+        
+        # For longer text, intelligently truncate at sentence boundaries
+        # Split on various sentence endings, but be more careful about periods
+        sentence_patterns = ['. ', '! ', '? ']
+        sentences = []
+        current_pos = 0
+        
+        while current_pos < len(text):
+            next_break = len(text)
+            for pattern in sentence_patterns:
+                pos = text.find(pattern, current_pos)
+                if pos != -1 and pos < next_break:
+                    # Check if it's not an abbreviation (like "Mr.", "Inc.", etc.)
+                    if not self._is_abbreviation(text, pos):
+                        next_break = pos + len(pattern)
+            
+            if next_break == len(text):
+                # No more sentence breaks, add the rest
+                sentences.append(text[current_pos:].strip())
+                break
+            else:
+                sentences.append(text[current_pos:next_break].strip())
+                current_pos = next_break
+        
+        if len(sentences) > 1:
+            # Try to keep complete sentences
+            result = sentences[0]
+            for sentence in sentences[1:]:
+                test_result = result + ' ' + sentence
+                if len(test_result) <= max_length:
+                    result = test_result
+                else:
+                    break
+            
+            # Ensure proper sentence ending
+            if not result.endswith('.') and not result.endswith('!') and not result.endswith('?'):
+                result += '.'
+            
+            return result
+        
+        # If it's just one long sentence, try to find a natural break point
+        words = text.split()
+        result = words[0]
+        
+        for i, word in enumerate(words[1:], 1):
+            test_result = result + ' ' + word
+            if len(test_result) <= max_length - 1:  # Leave room for period
+                result = test_result
+            else:
+                # Find the last natural break point (comma, semicolon, etc.)
+                last_comma = result.rfind(',')
+                last_semicolon = result.rfind(';')
+                last_and = result.rfind(' and ')
+                last_break = max(last_comma, last_semicolon, last_and)
+                
+                if last_break > len(result) // 2:  # Only break if it's not too early
+                    result = result[:last_break]
+                
+                break
+        
+        # Ensure proper ending punctuation
+        if not result.endswith('.') and not result.endswith('!') and not result.endswith('?'):
+            result += '.'
+        
+        return result
+    
+    def _is_abbreviation(self, text, pos):
+        """Check if a period is part of an abbreviation"""
+        if pos == 0:
+            return False
+        
+        # Common abbreviations that might appear in resumes
+        abbreviations = ['Mr', 'Mrs', 'Dr', 'Inc', 'Ltd', 'Corp', 'Co', 'LLC', 'etc', 'Jr', 'Sr', 'Ph', 'B', 'M', 'A']
+        
+        # Look backwards for word boundary
+        start = pos
+        while start > 0 and text[start - 1].isalnum():
+            start -= 1
+        
+        word_before = text[start:pos]
+        return word_before in abbreviations
+    
+    def format_job_description_optimized(self, job_description, max_bullets=4, max_bullet_length=180):
+        """Format job description with intelligent length management and complete sentences"""
+        if not job_description:
+            return []
+        
+        # If it's a string, split into bullet points
+        if isinstance(job_description, str):
+            # Split by common separators
+            bullets = []
+            for separator in ['. ', '; ', '\n', '• ', '- ']:
+                if separator in job_description:
+                    bullets = [item.strip() for item in job_description.split(separator) if item.strip()]
+                    break
+            
+            if not bullets:
+                bullets = [job_description]
+        else:
+            bullets = job_description if isinstance(job_description, list) else [str(job_description)]
+        
+        # Limit number of bullets and optimize length
+        optimized_bullets = []
+        for i, bullet in enumerate(bullets[:max_bullets]):
+            if bullet.strip():
+                # Clean up bullet point
+                bullet_text = bullet.strip()
+                
+                # Add proper capitalization if missing
+                if bullet_text and not bullet_text[0].isupper():
+                    bullet_text = bullet_text[0].upper() + bullet_text[1:]
+                
+                # Optimize length while maintaining complete sentences
+                optimized_bullet = self.optimize_content_for_single_page(bullet_text, max_bullet_length)
+                optimized_bullets.append(optimized_bullet)
+        
+        return optimized_bullets

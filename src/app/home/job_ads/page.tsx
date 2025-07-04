@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Container, Title, Loader, Text, Table, ScrollArea, Group, Button, Stack, Collapse, Modal, Tooltip, Badge, Anchor } from "@mantine/core";
-import { IconCheck, IconClock, IconBolt, IconExternalLink, IconBriefcase } from "@tabler/icons-react";
+import { Container, Title, Loader, Text, Table, ScrollArea, Group, Button, Stack, Collapse, Modal, Tooltip, Badge, Anchor, Select, List, MultiSelect, Checkbox } from "@mantine/core";
+import { IconCheck, IconClock, IconBolt, IconExternalLink, IconBriefcase, IconBulb } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { useRouter } from "next/navigation";
 import { getAuth } from "firebase/auth";
@@ -28,6 +28,11 @@ interface JobAd {
     };
 }
 
+interface ResumeSummary {
+    _id: string;
+    name: string;
+}
+
 export default function JobAdsPage() {
     const [ads, setAds] = useState<JobAd[]>([]);
     const [loading, setLoading] = useState(true);
@@ -38,6 +43,16 @@ export default function JobAdsPage() {
     const [appliedJobs, setAppliedJobs] = useState<Set<string>>(new Set());
     const [selectedAppliedJob, setSelectedAppliedJob] = useState<JobAd | null>(null);
     const [showAppliedWarning, setShowAppliedWarning] = useState(false);
+    
+    // New state for advice functionality
+    const [showAdviceModal, setShowAdviceModal] = useState(false);
+    const [showResumeSelectModal, setShowResumeSelectModal] = useState(false);
+    const [selectedJobForAdvice, setSelectedJobForAdvice] = useState<JobAd | null>(null);
+    const [completedResumes, setCompletedResumes] = useState<ResumeSummary[]>([]);
+    const [selectedResumeIds, setSelectedResumeIds] = useState<string[]>([]);
+    const [advice, setAdvice] = useState<any | null>(null);
+    const [adviceLoading, setAdviceLoading] = useState(false);
+    
     const router = useRouter();
 
     // Ensure user is authenticated
@@ -122,9 +137,25 @@ export default function JobAdsPage() {
             }
         }
         
+        async function fetchCompletedResumes() {
+            try {
+                const authHeaders = await getAuthHeaders();
+                const response = await fetch('http://localhost:5000/resume/resumes?status=complete', {
+                    headers: authHeaders,
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setCompletedResumes(data);
+                }
+            } catch (err) {
+                console.error("Failed to load completed resumes:", err);
+            }
+        }
+        
         fetchJobAds();
         fetchGenerationJobs();
         fetchAppliedJobs();
+        fetchCompletedResumes();
     }, []);
 
     // Poll for generation job updates every 5 seconds
@@ -206,6 +237,107 @@ export default function JobAdsPage() {
         }
         setShowAppliedWarning(false);
         setSelectedAppliedJob(null);
+    };
+
+    const handleGetAdvice = (jobAd: JobAd) => {
+        setSelectedJobForAdvice(jobAd);
+        setShowResumeSelectModal(true);
+    };
+
+    const handleResumeCheckboxChange = (resumeId: string, checked: boolean) => {
+        setSelectedResumeIds(prev => {
+            if (checked) {
+                return [...prev, resumeId];
+            } else {
+                return prev.filter(id => id !== resumeId);
+            }
+        });
+    };
+
+    const handleResumeSelect = async () => {
+        if (!selectedJobForAdvice || !selectedResumeIds.length) return;
+        
+        const notifId = "generate-advice";
+        setAdviceLoading(true);
+        setShowResumeSelectModal(false);
+        
+        notifications.show({
+            id: notifId,
+            loading: true,
+            title: "Generating Advice",
+            message: "Analyzing your resumes against the job requirements...",
+            autoClose: false,
+            withCloseButton: false
+        });
+        
+        try {
+            const authHeaders = await getAuthHeaders();
+            
+            // Get all selected resume data
+            const resumePromises = selectedResumeIds.map(async (resumeId) => {
+                const resumeResponse = await fetch(`http://localhost:5000/resume/${resumeId}`, {
+                    headers: authHeaders,
+                });
+                
+                if (!resumeResponse.ok) throw new Error(`Failed to fetch resume ${resumeId}`);
+                return await resumeResponse.json();
+            });
+            
+            const resumeDataArray = await Promise.all(resumePromises);
+            
+            // Create advice request payload with multiple resumes
+            const advicePayload = {
+                resume_data: resumeDataArray, // Array of resume data
+                job_ad_data: selectedJobForAdvice,
+                score_data: {} // We don't have score data for this case
+            };
+            
+            // Make direct API call to the advice generator
+            const response = await fetch('http://localhost:5000/generate_advice', {
+                method: 'POST',
+                headers: {
+                    ...authHeaders,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(advicePayload),
+            });
+            
+            if (!response.ok) throw new Error("Failed to generate advice");
+            const result = await response.json();
+            
+            setAdvice(result.advice);
+            setShowAdviceModal(true);
+            
+            notifications.update({
+                id: notifId,
+                loading: false,
+                title: "Advice Generated",
+                message: "Your personalized advice is ready!",
+                color: "teal",
+                autoClose: 3000
+            });
+            
+        } catch (err: any) {
+            console.error("Error generating advice:", err);
+            notifications.update({
+                id: notifId,
+                loading: false,
+                title: "Error",
+                message: err.message || "Failed to generate advice",
+                color: "red",
+                autoClose: 5000
+            });
+        } finally {
+            setAdviceLoading(false);
+        }
+    };
+
+    const resetAdviceState = () => {
+        setSelectedJobForAdvice(null);
+        setSelectedResumeIds([]);
+        setAdvice(null);
+        setShowAdviceModal(false);
+        setShowResumeSelectModal(false);
     };
 
     if (loading) {
@@ -292,6 +424,18 @@ export default function JobAdsPage() {
                       <Button variant="light" size="xs" onClick={() => toggleExpand(ad._id)}>
                         {expandedId === ad._id ? "Hide" : "Details"}
                       </Button>
+                      </Tooltip>
+
+                      <Tooltip label="Get personalized advice for this job">
+                        <Button 
+                          variant="light" 
+                          color="blue" 
+                          size="xs" 
+                          leftSection={<IconBulb size={14} />}
+                          onClick={() => handleGetAdvice(ad)}
+                        >
+                          Advice
+                        </Button>
                       </Tooltip>
 
                       <Tooltip label="Delete this job ad">
@@ -405,6 +549,184 @@ export default function JobAdsPage() {
               Proceed Anyway
             </Button>
           </Group>
+        </Stack>
+      </Modal>
+
+      {/* Resume Selection Modal */}
+      <Modal
+        opened={showResumeSelectModal}
+        onClose={() => {
+          setShowResumeSelectModal(false);
+          setSelectedJobForAdvice(null);
+          setSelectedResumeIds([]);
+        }}
+        title="Select Resumes for Advice"
+        centered
+        size="md"
+      >
+        <Stack gap="md">
+          <Text>
+            Get personalized advice for{" "}
+            <Text component="span" fw={500} c="blue">
+              {selectedJobForAdvice?.parse_result.job_title}
+            </Text>{" "}
+            at{" "}
+            <Text component="span" fw={500} c="blue">
+              {selectedJobForAdvice?.parse_result.company}
+            </Text>
+          </Text>
+          
+          <div>
+            <Text size="sm" fw={500} mb="sm">Choose completed resumes:</Text>
+            <Stack gap="xs">
+              {completedResumes.map(resume => (
+                <Checkbox
+                  key={resume._id}
+                  label={resume.name}
+                  checked={selectedResumeIds.includes(resume._id)}
+                  onChange={(event) => handleResumeCheckboxChange(resume._id, event.currentTarget.checked)}
+                />
+              ))}
+            </Stack>
+          </div>
+          
+          {completedResumes.length === 0 && (
+            <Text size="sm" c="dimmed" ta="center">
+              No completed resumes found. Please complete a resume first.
+            </Text>
+          )}
+          
+          <Group justify="space-between" mt="md">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowResumeSelectModal(false);
+                setSelectedJobForAdvice(null);
+                setSelectedResumeIds([]);
+              }}
+            >
+              Cancel
+            </Button>
+            
+            <Button
+              onClick={handleResumeSelect}
+              disabled={!selectedResumeIds.length}
+              loading={adviceLoading}
+            >
+              Get Advice
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* Advice Modal */}
+      <Modal
+        opened={showAdviceModal}
+        onClose={resetAdviceState}
+        title="Resume Advice"
+        centered
+        size="xl"
+        styles={{
+          body: { maxHeight: 600, overflowY: 'auto' }
+        }}
+      >
+        <Stack>
+          {advice ? (
+            typeof advice === 'string' ? (
+              <Text style={{ whiteSpace: "pre-line" }}>{advice}</Text>
+            ) : (
+              <Stack gap="lg">
+                {advice.overall_assessment && (
+                  <div>
+                    <Text fw={500} mb="sm">Overall Assessment</Text>
+                    <Text>{advice.overall_assessment}</Text>
+                  </div>
+                )}
+                
+                {advice.key_strengths && advice.key_strengths.length > 0 && (
+                  <div>
+                    <Text fw={500} color="green" mb="sm">Key Strengths</Text>
+                    <List>
+                      {advice.key_strengths.map((strength: string, index: number) => (
+                        <List.Item key={index}>{strength}</List.Item>
+                      ))}
+                    </List>
+                  </div>
+                )}
+                
+                {advice.priority_actions && advice.priority_actions.length > 0 && (
+                  <div>
+                    <Text fw={500} color="blue" mb="sm">Priority Actions</Text>
+                    <List>
+                      {advice.priority_actions.map((action: string, index: number) => (
+                        <List.Item key={index}>{action}</List.Item>
+                      ))}
+                    </List>
+                  </div>
+                )}
+                
+                {advice.improvement_areas && (
+                  <div>
+                    <Text fw={500} color="orange" mb="sm">Improvement Areas</Text>
+                    <Stack gap="sm">
+                      {advice.improvement_areas.content_improvements && advice.improvement_areas.content_improvements.length > 0 && (
+                        <div>
+                          <Text size="sm" fw={500}>Content Improvements:</Text>
+                          <List size="sm">
+                            {advice.improvement_areas.content_improvements.map((item: string, index: number) => (
+                              <List.Item key={index}>{item}</List.Item>
+                            ))}
+                          </List>
+                        </div>
+                      )}
+                      
+                      {advice.improvement_areas.keyword_optimization && advice.improvement_areas.keyword_optimization.length > 0 && (
+                        <div>
+                          <Text size="sm" fw={500}>Keyword Optimization:</Text>
+                          <List size="sm">
+                            {advice.improvement_areas.keyword_optimization.map((item: string, index: number) => (
+                              <List.Item key={index}>{item}</List.Item>
+                            ))}
+                          </List>
+                        </div>
+                      )}
+                      
+                      {advice.improvement_areas.skill_development && advice.improvement_areas.skill_development.length > 0 && (
+                        <div>
+                          <Text size="sm" fw={500}>Skill Development:</Text>
+                          <List size="sm">
+                            {advice.improvement_areas.skill_development.map((item: string, index: number) => (
+                              <List.Item key={index}>{item}</List.Item>
+                            ))}
+                          </List>
+                        </div>
+                      )}
+                    </Stack>
+                  </div>
+                )}
+                
+                {advice.long_term_recommendations && advice.long_term_recommendations.length > 0 && (
+                  <div>
+                    <Text fw={500} color="violet" mb="sm">Long-term Recommendations</Text>
+                    <List>
+                      {advice.long_term_recommendations.map((rec: string, index: number) => (
+                        <List.Item key={index}>{rec}</List.Item>
+                      ))}
+                    </List>
+                  </div>
+                )}
+                
+                {advice.encouragement && (
+                  <div>
+                    <Text fw={500} color="teal" mb="sm">Encouragement</Text>
+                    <Text style={{ fontStyle: 'italic' }}>{advice.encouragement}</Text>
+                  </div>
+                )}
+              </Stack>
+            )
+          ) : (
+            <Text>No advice available.</Text>
+          )}
         </Stack>
       </Modal>
     </Container>
