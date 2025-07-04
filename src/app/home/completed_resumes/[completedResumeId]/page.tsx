@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { Container, Title, Loader, Text, Stack, Card, List, Group, Divider, Button, Tooltip, Modal } from "@mantine/core";
 import { useParams, useRouter } from "next/navigation";
 import { getAuth } from "firebase/auth";
+import { set } from "react-hook-form";
+import { actionAsyncStorage } from "next/dist/server/app-render/action-async-storage.external";
 
 interface CompletedResume {
     _id: string;
@@ -24,6 +26,9 @@ export default function CompletedResumePage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showFormatModal, setShowFormatModal] = useState(false);
+    const [advice, setAdvice] = useState<string | null>(null);
+    const [adviceLoading, setAdviceLoading] = useState(false);
+    const [showAdviceModal, setShowAdviceModal] = useState(false);
 
     const getAuthHeaders = async () => {
         const auth = getAuth();
@@ -95,6 +100,26 @@ export default function CompletedResumePage() {
         }
     };
 
+    const handleGetAdvice = async () => {
+        setAdviceLoading(true);
+        setAdvice(null);
+        try {
+            const authHeaders = await getAuthHeaders();
+            const response = await fetch(
+                `http://localhost:5000/completed_resumes/${completedResumeId}/advice`,
+                { method: "POST", headers: authHeaders }
+            );
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || "Failed to get advice");
+            setAdvice(result.advice);
+        } catch (err: any) {
+            setAdvice("Error: " + (err.message || "Failed to get advice"));
+        } finally {
+            setAdviceLoading(false);
+            setShowAdviceModal(true);
+        }
+    };
+
     if (loading) return <Container><Loader /></Container>;
     if (error || !data) return <Container><Text color="red">Error loading data</Text></Container>;
 
@@ -105,9 +130,19 @@ export default function CompletedResumePage() {
             </Title>
 
             {typeof data.score === "number" && (
-                <Text size = "lg" fw={700} color ="blue" mb="md">
-                    Match Score: {data.score} / 100
-                </Text>
+                <Group mb="md">
+                    <Text size="lg" fw={700} color="blue">
+                        Match Score: {data.score} / 100
+                    </Text>
+                    <Button
+                        size="xs"
+                        variant="light"
+                        loading={adviceLoading}
+                        onClick={handleGetAdvice}
+                    >
+                        Get Advice
+                    </Button>
+                </Group>
             )}
             
             <Text size="sm" color="dimmed" mb="xl">
@@ -351,6 +386,26 @@ export default function CompletedResumePage() {
                     </Group>
                 </Stack>
             </Modal>
+
+            <Modal
+                opened={showAdviceModal}
+                onClose={() => setShowAdviceModal(false)}
+                title="Resume Advice"
+                centered
+                size="lg"
+                scrollAreaComponent={Stack}
+                styles={{
+                    body: { maxHeight: 400, overflowY: 'auto' }
+                }}
+            >
+                <Stack>
+                    {advice ? (
+                        <Text style={{ whiteSpace: "pre-line" }}>{advice}</Text>
+                    ) : (
+                        <Text>No advice available.</Text>
+                    )}
+                </Stack>
+            </Modal>
         </Container>
-    );
+    );   
 }

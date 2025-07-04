@@ -58,7 +58,7 @@ export default function JobPostingPage() {
             notifications.update({id: notifId, loading: false, title: "Job Processed", message: payload.message, color: "teal", autoClose: 3000, withCloseButton: true});
         }
         catch(err: any) {
-            notifications.update({id: notifId, loading: false, title: "Upload failed", message: err.message, color: "red", autoClose: 4000, withCloseButton: true});
+            notifications.update({id: notifId, loading: false, title: "Upload failed", message: "Try copying and pasting the job ad text instead. " + err.message, color: "red", autoClose: 4000, withCloseButton: true});
         }
         finally {
             setSubmitting(false);
@@ -106,7 +106,8 @@ export default function JobPostingPage() {
                             onChange={(e) => setJobUrl(e.currentTarget.value)}
                         />
                         <Text size="sm" c="dimmed">
-                            Enter a URL to a job posting (LinkedIn, Indeed, company careers page, etc.)
+                            Enter a URL to a job posting (LinkedIn, company careers page, etc.) <br />
+                            <b>If scraping fails, please copy and paste the job ad text instead.</b>
                         </Text>
                     </Stack>
                 )}

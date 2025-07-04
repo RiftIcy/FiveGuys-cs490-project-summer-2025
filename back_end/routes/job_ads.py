@@ -326,6 +326,8 @@ def process_resume_generation_background(job_id, user_id, job_ad_id, resume_ids)
         
         try:
             tailored_resume_data = tailoring_parser.tailor_resume(combined_resume_data, job_ad_data)
+            if "score" not in tailored_resume_data:
+                tailored_resume_data["score"] = 0 
         except Exception as e:
             resume_generation_jobs_collection.update_one(
                 {"_id": ObjectId(job_id)},

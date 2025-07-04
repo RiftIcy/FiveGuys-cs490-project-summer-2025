@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from .auth_utils import require_firebase_auth
 from db import completed_resumes_collection
 from bson import ObjectId
+from parser.parser import ResumeAdviceParser
 
 completed_resumes_bp = Blueprint("completed_resumes", __name__)
 
@@ -43,6 +44,32 @@ def get_completed_resume(completed_resume_id):
         
     except Exception as e:
         return jsonify({"error": f"Server error: {str(e)}"}), 500
+    
+@completed_resumes_bp.route("/completed_resumes/<completed_resume_id>/advice", methods=["POST"])
+@require_firebase_auth
+def get_resume_advice(completed_resume_id):
+    """
+    Get LLM advice for a completed resume based on its score and job ad.
+    """
+    if not ObjectId.is_valid(completed_resume_id):
+        return jsonify({"error": "Invalid completed resume ID"}), 400
+
+    doc = completed_resumes_collection.find_one({
+        "_id": ObjectId(completed_resume_id),
+        "user_id": request.user_id
+    })
+
+    if not doc:
+        return jsonify({"error": "Completed resume not found"}), 404
+
+    tailored_resume = doc.get("tailored_resume", {})
+    job_ad_data = doc.get("job_ad_data", {})
+    score = tailored_resume.get("score", 0)
+
+    advice_parser = ResumeAdviceParser()
+    advice = advice_parser.generate_advice(tailored_resume, job_ad_data, score)
+
+    return jsonify({"advice": advice}), 200
 
 @completed_resumes_bp.route("/completed_resumes", methods=["GET"])
 @require_firebase_auth

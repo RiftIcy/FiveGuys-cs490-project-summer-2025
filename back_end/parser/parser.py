@@ -152,8 +152,7 @@ class ResumeTailoringParser:
                     "- Reorder or reformat content to highlight the most relevant sections first. "
                     "- You may adjust the career objective to mention the target company and role, but do NOT imply experience the candidate does not have. "
 
-                    "Return the tailored resume in the exact same JSON format as the input resume with a score between 0-100. "
-                    "Output only valid JSON. Do not include any explanations, formatting, or comments."
+                    "Return the tailored resume in the exact same JSON format as the input resume, but ADD a top-level field named \"score\" (an integer between 0 and 100) indicating the match. The output MUST be a single JSON object with all original fields and the new \"score\" field at the top level. Output only valid JSON. Do not include any explanations, formatting, or comments."
                 )
             },
             {
@@ -166,3 +165,55 @@ class ResumeTailoringParser:
         return json.loads(resp.choices[0].message.content)
 
 #{"role": "system", "content": "Return JSON with keys: name, contact, skills, education, jobs."}
+
+class ResumeAdviceParser:
+    """
+    Wrap OpenAI chat API to provide advice on how to improve a tailored resume based on the job ad and score.
+    """
+    def __init__(self, api_key: str = None):
+        key = api_key or OPENAI_API_KEY
+        if not key:
+            raise ValueError("OpenAI API key must be set in OPENAI_API_KEY")
+        self.client = OpenAI(api_key=key)
+
+    def generate_advice(self, tailored_resume: dict, job_ad_data: dict, score: int) -> str:
+        """
+        Generate advice for a tailored resume based on its score and the job ad.
+
+        Args:
+            tailored_resume: The tailored resume data (dict)
+            job_ad_data: The job ad data (dict)
+            score: The match score (int)
+
+        Returns:
+            Advice string from the LLM
+        """
+        resume_json = json.dumps(tailored_resume, indent=2)
+        job_ad_json = json.dumps(job_ad_data, indent=2)
+
+        resp = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an expert resume reviewer. "
+                        "Given a tailored resume, a job ad, and a match score, explain in detail why the resume received this score. "
+                        "Provide actionable, specific advice on how the candidate could improve their resume to better match the job ad. "
+                        "Be concise, constructive, and professional."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"RESUME (JSON):\n{resume_json}\n\n"
+                        f"JOB AD (JSON):\n{job_ad_json}\n\n"
+                        f"SCORE: {score}\n\n"
+                        "Please explain the reasoning behind this score and give advice for improvement."
+                    )
+                }
+            ],
+            temperature=0.3,
+            max_tokens=500
+        )
+        return resp.choices[0].message.content.strip()
