@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Container, Title, Loader, Text, Stack, Card, List, Group, Divider, Button, Tooltip, Modal } from "@mantine/core";
+import { Container, Title, Loader, Text, Stack, Card, List, Group, Divider, Button, Tooltip, Modal, Collapse } from "@mantine/core";
 import { useParams, useRouter } from "next/navigation";
 import { getAuth } from "firebase/auth";
-import { set } from "react-hook-form";
-import { actionAsyncStorage } from "next/dist/server/app-render/action-async-storage.external";
+import { IconChevronDown, IconChevronUp } from "@tabler/icons-react";
 
 interface CompletedResume {
     _id: string;
@@ -17,6 +16,19 @@ interface CompletedResume {
     source_resume_names: string[];
     job_ad_data: any;
     score?: number;
+    score_data?: {
+        overall_score: number;
+        category_scores: {
+            skills_match: number;
+            experience_relevance: number;
+            education: number;
+            keyword_alignment: number;
+            impact_achievements: number;
+        };
+        strengths: string[];
+        gaps: string[];
+        transferable_skills: string[];
+    };
 }
 
 export default function CompletedResumePage() {
@@ -26,9 +38,10 @@ export default function CompletedResumePage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showFormatModal, setShowFormatModal] = useState(false);
-    const [advice, setAdvice] = useState<string | null>(null);
+    const [advice, setAdvice] = useState<any | null>(null);
     const [adviceLoading, setAdviceLoading] = useState(false);
     const [showAdviceModal, setShowAdviceModal] = useState(false);
+    const [scoreDetailsOpen, setScoreDetailsOpen] = useState(false);
 
     const getAuthHeaders = async () => {
         const auth = getAuth();
@@ -129,20 +142,140 @@ export default function CompletedResumePage() {
                 Tailored Resume for: {data.job_title} at {data.company}
             </Title>
 
-            {typeof data.score === "number" && (
-                <Group mb="md">
-                    <Text size="lg" fw={700} color="blue">
-                        Match Score: {data.score} / 100
-                    </Text>
-                    <Button
-                        size="xs"
-                        variant="light"
-                        loading={adviceLoading}
-                        onClick={handleGetAdvice}
-                    >
-                        Get Advice
-                    </Button>
-                </Group>
+            {(typeof data.score === "number" || data.score_data) && (
+                <Card withBorder p="md" mb="md">
+                    <Stack gap="md">
+                        <Group justify="space-between" align="center">
+                            <Group gap="md" align="center">
+                                <Text size="lg" fw={700} color="blue">
+                                    Match Score: {data.score_data?.overall_score || data.score || 0} / 100
+                                </Text>
+                                <Button
+                                    variant="subtle"
+                                    size="xs"
+                                    leftSection={scoreDetailsOpen ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
+                                    onClick={() => setScoreDetailsOpen(!scoreDetailsOpen)}
+                                >
+                                    {scoreDetailsOpen ? 'Hide Details' : 'Show Details'}
+                                </Button>
+                            </Group>
+                            <Tooltip 
+                                label="Get personalized advice on how to improve your resume's match with this job posting, including specific recommendations for better keyword usage, experience highlighting, and skill presentation."
+                                position="bottom"
+                                multiline
+                                w={300}
+                            >
+                                <Button
+                                    size="xs"
+                                    variant="light"
+                                    loading={adviceLoading}
+                                    onClick={handleGetAdvice}
+                                >
+                                    Get Advice
+                                </Button>
+                            </Tooltip>
+                        </Group>
+                        
+                        <Collapse in={scoreDetailsOpen}>
+                            <Stack gap="md">
+                                {data.score_data?.category_scores && (
+                                    <div>
+                                        <Text size="sm" fw={500} c="dimmed" mb="sm">Score Breakdown:</Text>
+                                        <Group gap="lg" wrap="wrap">
+                                            <Tooltip 
+                                                label="Skills Match (0-20): Measures how many of the job's required technical skills you have. 18-20 = 90%+ match, 15-17 = 70-89% match, 10-14 = 50-69% match."
+                                                position="top"
+                                                multiline
+                                                w={250}
+                                            >
+                                                <Text size="sm" style={{ cursor: 'help', textDecoration: 'underline dotted' }}>
+                                                    Skills: {data.score_data.category_scores.skills_match}/20
+                                                </Text>
+                                            </Tooltip>
+                                            
+                                            <Tooltip 
+                                                label="Experience Relevance (0-20): Evaluates how relevant your work experience is to this role. Only considers relevant experience - irrelevant experience is neutral, not negative."
+                                                position="top"
+                                                multiline
+                                                w={250}
+                                            >
+                                                <Text size="sm" style={{ cursor: 'help', textDecoration: 'underline dotted' }}>
+                                                    Experience: {data.score_data.category_scores.experience_relevance}/20
+                                                </Text>
+                                            </Tooltip>
+                                            
+                                            <Tooltip 
+                                                label="Education (0-20): Checks if your education meets job requirements. More education than required is always positive - never penalized for overqualification."
+                                                position="top"
+                                                multiline
+                                                w={250}
+                                            >
+                                                <Text size="sm" style={{ cursor: 'help', textDecoration: 'underline dotted' }}>
+                                                    Education: {data.score_data.category_scores.education}/20
+                                                </Text>
+                                            </Tooltip>
+                                            
+                                            <Tooltip 
+                                                label="Keyword Alignment (0-20): Measures how well your resume uses terminology from the job posting. Higher scores indicate better ATS compatibility."
+                                                position="top"
+                                                multiline
+                                                w={250}
+                                            >
+                                                <Text size="sm" style={{ cursor: 'help', textDecoration: 'underline dotted' }}>
+                                                    Keywords: {data.score_data.category_scores.keyword_alignment}/20
+                                                </Text>
+                                            </Tooltip>
+                                            
+                                            <Tooltip 
+                                                label="Impact & Achievements (0-20): Evaluates quantifiable results and value delivered in your experience. Focuses on measurable accomplishments rather than just job duties."
+                                                position="top"
+                                                multiline
+                                                w={250}
+                                            >
+                                                <Text size="sm" style={{ cursor: 'help', textDecoration: 'underline dotted' }}>
+                                                    Impact: {data.score_data.category_scores.impact_achievements}/20
+                                                </Text>
+                                            </Tooltip>
+                                        </Group>
+                                    </div>
+                                )}
+                                
+                                {data.score_data?.strengths && data.score_data.strengths.length > 0 && (
+                                    <div>
+                                        <Text size="sm" fw={500} color="green" mb="xs">Key Strengths:</Text>
+                                        <List size="sm" spacing="xs">
+                                            {data.score_data.strengths.map((strength, index) => (
+                                                <List.Item key={index}>{strength}</List.Item>
+                                            ))}
+                                        </List>
+                                    </div>
+                                )}
+                                
+                                {data.score_data?.gaps && data.score_data.gaps.length > 0 && (
+                                    <div>
+                                        <Text size="sm" fw={500} color="orange" mb="xs">Areas for Improvement:</Text>
+                                        <List size="sm" spacing="xs">
+                                            {data.score_data.gaps.map((gap, index) => (
+                                                <List.Item key={index}>{gap}</List.Item>
+                                            ))}
+                                        </List>
+                                    </div>
+                                )}
+                                
+                                {data.score_data?.transferable_skills && data.score_data.transferable_skills.length > 0 && (
+                                    <div>
+                                        <Text size="sm" fw={500} color="violet" mb="xs">Transferable Skills:</Text>
+                                        <List size="sm" spacing="xs">
+                                            {data.score_data.transferable_skills.map((skill, index) => (
+                                                <List.Item key={index}>{skill}</List.Item>
+                                            ))}
+                                        </List>
+                                    </div>
+                                )}
+                            </Stack>
+                        </Collapse>
+                    </Stack>
+                </Card>
             )}
             
             <Text size="sm" color="dimmed" mb="xl">
@@ -392,15 +525,106 @@ export default function CompletedResumePage() {
                 onClose={() => setShowAdviceModal(false)}
                 title="Resume Advice"
                 centered
-                size="lg"
+                size="xl"
                 scrollAreaComponent={Stack}
                 styles={{
-                    body: { maxHeight: 400, overflowY: 'auto' }
+                    body: { maxHeight: 600, overflowY: 'auto' }
                 }}
             >
                 <Stack>
                     {advice ? (
-                        <Text style={{ whiteSpace: "pre-line" }}>{advice}</Text>
+                        typeof advice === 'string' ? (
+                            <Text style={{ whiteSpace: "pre-line" }}>{advice}</Text>
+                        ) : (
+                            <Stack gap="lg">
+                                {advice.overall_assessment && (
+                                    <div>
+                                        <Text fw={500} mb="sm">Overall Assessment</Text>
+                                        <Text>{advice.overall_assessment}</Text>
+                                    </div>
+                                )}
+                                
+                                {advice.key_strengths && advice.key_strengths.length > 0 && (
+                                    <div>
+                                        <Text fw={500} color="green" mb="sm">Key Strengths</Text>
+                                        <List>
+                                            {advice.key_strengths.map((strength: string, index: number) => (
+                                                <List.Item key={index}>{strength}</List.Item>
+                                            ))}
+                                        </List>
+                                    </div>
+                                )}
+                                
+                                {advice.priority_actions && advice.priority_actions.length > 0 && (
+                                    <div>
+                                        <Text fw={500} color="blue" mb="sm">Priority Actions</Text>
+                                        <List>
+                                            {advice.priority_actions.map((action: string, index: number) => (
+                                                <List.Item key={index}>{action}</List.Item>
+                                            ))}
+                                        </List>
+                                    </div>
+                                )}
+                                
+                                {advice.improvement_areas && (
+                                    <div>
+                                        <Text fw={500} color="orange" mb="sm">Improvement Areas</Text>
+                                        <Stack gap="sm">
+                                            {advice.improvement_areas.content_improvements && advice.improvement_areas.content_improvements.length > 0 && (
+                                                <div>
+                                                    <Text size="sm" fw={500}>Content Improvements:</Text>
+                                                    <List size="sm">
+                                                        {advice.improvement_areas.content_improvements.map((item: string, index: number) => (
+                                                            <List.Item key={index}>{item}</List.Item>
+                                                        ))}
+                                                    </List>
+                                                </div>
+                                            )}
+                                            
+                                            {advice.improvement_areas.keyword_optimization && advice.improvement_areas.keyword_optimization.length > 0 && (
+                                                <div>
+                                                    <Text size="sm" fw={500}>Keyword Optimization:</Text>
+                                                    <List size="sm">
+                                                        {advice.improvement_areas.keyword_optimization.map((item: string, index: number) => (
+                                                            <List.Item key={index}>{item}</List.Item>
+                                                        ))}
+                                                    </List>
+                                                </div>
+                                            )}
+                                            
+                                            {advice.improvement_areas.skill_development && advice.improvement_areas.skill_development.length > 0 && (
+                                                <div>
+                                                    <Text size="sm" fw={500}>Skill Development:</Text>
+                                                    <List size="sm">
+                                                        {advice.improvement_areas.skill_development.map((item: string, index: number) => (
+                                                            <List.Item key={index}>{item}</List.Item>
+                                                        ))}
+                                                    </List>
+                                                </div>
+                                            )}
+                                        </Stack>
+                                    </div>
+                                )}
+                                
+                                {advice.long_term_recommendations && advice.long_term_recommendations.length > 0 && (
+                                    <div>
+                                        <Text fw={500} color="violet" mb="sm">Long-term Recommendations</Text>
+                                        <List>
+                                            {advice.long_term_recommendations.map((rec: string, index: number) => (
+                                                <List.Item key={index}>{rec}</List.Item>
+                                            ))}
+                                        </List>
+                                    </div>
+                                )}
+                                
+                                {advice.encouragement && (
+                                    <div>
+                                        <Text fw={500} color="teal" mb="sm">Encouragement</Text>
+                                        <Text style={{ fontStyle: 'italic' }}>{advice.encouragement}</Text>
+                                    </div>
+                                )}
+                            </Stack>
+                        )
                     ) : (
                         <Text>No advice available.</Text>
                     )}

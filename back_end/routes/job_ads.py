@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from .auth_utils import require_firebase_auth
 from db import job_ads_collection, biography_collection, completed_resumes_collection, resume_generation_jobs_collection
 from bson import ObjectId
-from parser.parser import JobAdParser, ResumeTailoringParser
+from parser.parser import JobAdParser, ResumeTailoringParser, ResumeScorer
 from datetime import datetime
 import threading
 import time
@@ -323,11 +323,18 @@ def process_resume_generation_background(job_id, user_id, job_ad_id, resume_ids)
         
         # Step 3: Tailor the COMBINED resume against the job ad
         tailoring_parser = ResumeTailoringParser()
+        scorer = ResumeScorer()
         
         try:
+            # Tailor the resume (no scoring in this step)
             tailored_resume_data = tailoring_parser.tailor_resume(combined_resume_data, job_ad_data)
-            if "score" not in tailored_resume_data:
-                tailored_resume_data["score"] = 0 
+            
+            # Generate score separately
+            score_data = scorer.score_resume(combined_resume_data, job_ad_data)
+            
+            # Add score to tailored resume for backward compatibility
+            tailored_resume_data["score"] = str(score_data["overall_score"])
+            
         except Exception as e:
             resume_generation_jobs_collection.update_one(
                 {"_id": ObjectId(job_id)},
@@ -349,6 +356,7 @@ def process_resume_generation_background(job_id, user_id, job_ad_id, resume_ids)
             "company": job_ad_data.get("company"),
             "created_at": datetime.utcnow(),
             "tailored_resume": tailored_resume_data,
+            "score_data": score_data,  # Store detailed score data
             "source_resume_ids": resume_ids,
             "source_resume_names": source_resume_names,
             "job_ad_data": job_ad_data

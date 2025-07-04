@@ -104,6 +104,7 @@ class JobAdParser:
 class ResumeTailoringParser:
     """
     Wrap OpenAI chat API to tailor resume data based on job ad requirements.
+    Only handles tailoring - scoring and advice are handled by separate classes.
     """
     def __init__(self, api_key: str = None):
         key = api_key or OPENAI_API_KEY
@@ -120,7 +121,7 @@ class ResumeTailoringParser:
             job_ad_data: Parsed job ad data from JobAdParser
             
         Returns:
-            Tailored resume data optimized for the specific job
+            Tailored resume data optimized for the specific job (without score)
         """
         resume_json = json.dumps(resume_data, indent=2)
         job_ad_json = json.dumps(job_ad_data, indent=2)
@@ -132,9 +133,9 @@ class ResumeTailoringParser:
             {
                 "role": "system",
                 "content": (
-                    "You are an expert resume writer and a experienced technical recruiter. Your task is to tailor an existing resume to better match a specific job posting and give a numerical rating on how much the resume matches the job ad. "
+                    "You are an expert resume writer. Your task is to tailor an existing resume to better match a specific job posting. "
                     "You will receive a resume in JSON format and a job posting in JSON format. "
-                    "Your goal is to optimize the resume for this specific job while maintaining absolute accuracy and truthfulness, and also assign a numeric score (0-100) on how well it matches the job ad. "
+                    "Your goal is to optimize the resume for this specific job while maintaining absolute accuracy and truthfulness. "
 
                     "IMPORTANT RULES: "
                     "1. NEVER fabricate, infer, or add any new information (skills, experience, education, certifications) that is not explicitly present in the resume input. "
@@ -144,7 +145,7 @@ class ResumeTailoringParser:
                     "5. Keep the same JSON structure as the input resume. "
                     "6. Maintain professional language and formatting. "
                     "7. Do not make assumptions or halluncinate about the candidate's experience or skills. "
-                    "8. Only base your evaluation on the information present in the resume. "
+                    "8. Only base your optimization on the information present in the resume. "
 
                     "TAILORING STRATEGIES: "
                     "- Reorder skills to emphasize those the candidate already has that are relevant to the job. "
@@ -152,7 +153,7 @@ class ResumeTailoringParser:
                     "- Reorder or reformat content to highlight the most relevant sections first. "
                     "- You may adjust the career objective to mention the target company and role, but do NOT imply experience the candidate does not have. "
 
-                    "Return the tailored resume in the exact same JSON format as the input resume, but ADD a top-level field named \"score\" (an integer between 0 and 100) indicating the match. The output MUST be a single JSON object with all original fields and the new \"score\" field at the top level. Output only valid JSON. Do not include any explanations, formatting, or comments."
+                    "Return the tailored resume in the exact same JSON format as the input resume. Output only valid JSON. Do not include any explanations, formatting, or comments."
                 )
             },
             {
@@ -164,11 +165,10 @@ class ResumeTailoringParser:
         )
         return json.loads(resp.choices[0].message.content)
 
-#{"role": "system", "content": "Return JSON with keys: name, contact, skills, education, jobs."}
 
-class ResumeAdviceParser:
+class ResumeScorer:
     """
-    Wrap OpenAI chat API to provide advice on how to improve a tailored resume based on the job ad and score.
+    Deterministic resume scoring system that evaluates resume-job match.
     """
     def __init__(self, api_key: str = None):
         key = api_key or OPENAI_API_KEY
@@ -176,44 +176,178 @@ class ResumeAdviceParser:
             raise ValueError("OpenAI API key must be set in OPENAI_API_KEY")
         self.client = OpenAI(api_key=key)
 
-    def generate_advice(self, tailored_resume: dict, job_ad_data: dict, score: int) -> str:
+    def score_resume(self, resume_data: dict, job_ad_data: dict) -> dict:
         """
-        Generate advice for a tailored resume based on its score and the job ad.
-
+        Score a resume against a job ad using deterministic criteria.
+        
         Args:
-            tailored_resume: The tailored resume data (dict)
-            job_ad_data: The job ad data (dict)
-            score: The match score (int)
-
+            resume_data: Parsed resume data
+            job_ad_data: Parsed job ad data
+            
         Returns:
-            Advice string from the LLM
+            Dict with overall score, category scores, strengths, and gaps
         """
-        resume_json = json.dumps(tailored_resume, indent=2)
+        resume_json = json.dumps(resume_data, indent=2)
         job_ad_json = json.dumps(job_ad_data, indent=2)
-
+        
         resp = self.client.chat.completions.create(
             model="gpt-4o-mini",
+            response_format={"type": "json_object"},
             messages=[
                 {
                     "role": "system",
                     "content": (
-                        "You are an expert resume reviewer. "
-                        "Given a tailored resume, a job ad, and a match score, explain in detail why the resume received this score. "
-                        "Provide actionable, specific advice on how the candidate could improve their resume to better match the job ad. "
-                        "Be concise, constructive, and professional."
+                        "You are an expert technical recruiter. Score this resume against the job requirements using the following DETERMINISTIC scoring rubric. "
+                        "NEVER penalize for overqualification, extra education, or irrelevant experience. Only penalize for MISSING requirements. "
+                        "Treat extra qualifications and diverse backgrounds as STRENGTHS, not weaknesses. "
+                        
+                        "SCORING CATEGORIES (each 0-20 points): "
+                        "1. SKILLS_MATCH (0-20): How many required technical skills does the candidate have? "
+                        "   - 18-20: Has 90%+ of required skills, bonus for additional relevant skills "
+                        "   - 15-17: Has 70-89% of required skills "
+                        "   - 10-14: Has 50-69% of required skills "
+                        "   - 5-9: Has 25-49% of required skills "
+                        "   - 0-4: Has <25% of required skills "
+                        
+                        "2. EXPERIENCE_RELEVANCE (0-20): How relevant is their work experience? "
+                        "Focus ONLY on relevant experience. Irrelevant experience is NEUTRAL (not negative). "
+                        "   - 18-20: Has relevant experience that meets/exceeds requirements "
+                        "   - 15-17: Has some relevant experience, meets minimum requirements "
+                        "   - 10-14: Has limited relevant experience, below requirements "
+                        "   - 5-9: Has minimal relevant experience "
+                        "   - 0-4: No relevant experience for this specific role "
+                        
+                        "3. EDUCATION (0-20): Does education meet minimum requirements? "
+                        "More education than required = POSITIVE, never negative. "
+                        "   - 18-20: Exceeds education requirements or has relevant advanced degrees "
+                        "   - 15-17: Meets education requirements exactly "
+                        "   - 10-14: Close to requirements (e.g., relevant bootcamp vs degree) "
+                        "   - 5-9: Below requirements but has relevant experience compensation "
+                        "   - 0-4: Significantly below requirements with no compensation "
+                        
+                        "4. KEYWORD_ALIGNMENT (0-20): Resume uses terminology/keywords from job posting "
+                        "   - 18-20: Uses 80%+ of job posting terminology naturally "
+                        "   - 15-17: Uses 60-79% of job posting terminology "
+                        "   - 10-14: Uses 40-59% of job posting terminology "
+                        "   - 5-9: Uses 20-39% of job posting terminology "
+                        "   - 0-4: Uses <20% of job posting terminology "
+                        
+                        "5. IMPACT_ACHIEVEMENTS (0-20): Evidence of delivering results and value "
+                        "   - 18-20: Multiple quantified achievements, clear business impact "
+                        "   - 15-17: Several good achievements, some quantified results "
+                        "   - 10-14: Some achievements mentioned, limited quantification "
+                        "   - 5-9: Few achievements, mostly task-oriented descriptions "
+                        "   - 0-4: No clear achievements or impact demonstrated "
+                        
+                        "IMPORTANT: "
+                        "- Extra education, certifications, or experience should BOOST scores, not hurt them "
+                        "- Diverse backgrounds and transferable skills are STRENGTHS "
+                        "- Only penalize for what's MISSING, never for what's 'extra' "
+                        "- Consider career changers and non-traditional paths as having valuable diverse perspectives "
+                        
+                        "Return JSON with: "
+                        "{ "
+                        "  \"overall_score\": <sum of all category scores>, "
+                        "  \"category_scores\": { "
+                        "    \"skills_match\": <0-20>, "
+                        "    \"experience_relevance\": <0-20>, "
+                        "    \"education\": <0-20>, "
+                        "    \"keyword_alignment\": <0-20>, "
+                        "    \"impact_achievements\": <0-20> "
+                        "  }, "
+                        "  \"strengths\": [\"list of 2-4 key strengths\"], "
+                        "  \"gaps\": [\"list of 1-3 missing requirements only\"], "
+                        "  \"transferable_skills\": [\"list of transferable skills from other domains\"] "
+                        "} "
+                        
+                        "Output only valid JSON."
                     )
                 },
                 {
                     "role": "user",
+                    "content": f"Score this resume against this job ad:\n\nRESUME:\n{resume_json}\n\nJOB AD:\n{job_ad_json}"
+                }
+            ],
+            temperature=0.1,
+        )
+        return json.loads(resp.choices[0].message.content)
+
+
+class ResumeAdviceGenerator:
+    """
+    Generate tailored advice for improving resume-job match.
+    """
+    def __init__(self, api_key: str = None):
+        key = api_key or OPENAI_API_KEY
+        if not key:
+            raise ValueError("OpenAI API key must be set in OPENAI_API_KEY")
+        self.client = OpenAI(api_key=key)
+
+    def generate_advice(self, resume_data: dict, job_ad_data: dict, score_data: dict = None) -> dict:
+        """
+        Generate specific, actionable advice for improving resume-job match.
+        
+        Args:
+            resume_data: Parsed resume data
+            job_ad_data: Parsed job ad data
+            score_data: Optional scoring data for context
+            
+        Returns:
+            Dict with structured advice, tips, and recommendations
+        """
+        resume_json = json.dumps(resume_data, indent=2)
+        job_ad_json = json.dumps(job_ad_data, indent=2)
+        score_json = json.dumps(score_data, indent=2) if score_data else "No scoring data provided"
+        
+        resp = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            response_format={"type": "json_object"},
+            messages=[
+                {
+                    "role": "system",
                     "content": (
-                        f"RESUME (JSON):\n{resume_json}\n\n"
-                        f"JOB AD (JSON):\n{job_ad_json}\n\n"
-                        f"SCORE: {score}\n\n"
-                        "Please explain the reasoning behind this score and give advice for improvement."
+                        "You are an expert career coach and resume consultant. Provide specific, actionable advice for improving this resume's match with the job posting. "
+                        "Focus on constructive improvements while celebrating existing strengths. "
+                        
+                        "ADVICE PRINCIPLES: "
+                        "1. NEVER suggest adding skills or experience the candidate doesn't have "
+                        "2. Focus on better highlighting and presenting existing qualifications "
+                        "3. Celebrate diverse backgrounds and transferable skills as strengths "
+                        "4. Provide specific, actionable recommendations "
+                        "5. Be encouraging and positive while being realistic "
+                        "6. Consider career changers and non-traditional paths as valuable "
+                        
+                        "ADVICE CATEGORIES: "
+                        "1. CONTENT_IMPROVEMENTS: How to better present existing experience "
+                        "2. KEYWORD_OPTIMIZATION: How to incorporate job posting language naturally "
+                        "3. FORMATTING_TIPS: Structure and presentation improvements "
+                        "4. SKILL_DEVELOPMENT: Specific skills to develop (based on gaps identified) "
+                        "5. EXPERIENCE_HIGHLIGHTING: How to emphasize relevant experience better "
+                        
+                        "Return JSON with: "
+                        "{ "
+                        "  \"overall_assessment\": \"2-3 sentence positive overview\", "
+                        "  \"key_strengths\": [\"list of 3-5 specific strengths to celebrate\"], "
+                        "  \"improvement_areas\": { "
+                        "    \"content_improvements\": [\"specific content suggestions\"], "
+                        "    \"keyword_optimization\": [\"specific keyword suggestions\"], "
+                        "    \"formatting_tips\": [\"specific formatting improvements\"], "
+                        "    \"skill_development\": [\"specific skills to develop\"], "
+                        "    \"experience_highlighting\": [\"ways to better present experience\"] "
+                        "  }, "
+                        "  \"priority_actions\": [\"top 3 most impactful changes to make\"], "
+                        "  \"long_term_recommendations\": [\"career development suggestions\"], "
+                        "  \"encouragement\": \"positive, motivating message about their potential\" "
+                        "} "
+                        
+                        "Be specific, actionable, and encouraging. Output only valid JSON."
                     )
+                },
+                {
+                    "role": "user",
+                    "content": f"Provide advice for this resume and job combination:\n\nRESUME:\n{resume_json}\n\nJOB:\n{job_ad_json}\n\nSCORE DATA:\n{score_json}"
                 }
             ],
             temperature=0.3,
-            max_tokens=500
         )
-        return resp.choices[0].message.content.strip()
+        return json.loads(resp.choices[0].message.content)
