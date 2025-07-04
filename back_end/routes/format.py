@@ -1,11 +1,6 @@
 from flask import Blueprint, request, jsonify
 from routes.auth_utils import require_firebase_auth
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.lib import colors
-from io import BytesIO
+from latex_compiler import LaTeXCompiler
 import base64
 
 format_bp = Blueprint("format", __name__)
@@ -14,7 +9,7 @@ format_bp = Blueprint("format", __name__)
 @require_firebase_auth
 def format_resume():
     """
-    Format resume data into a PDF and return download URL.
+    Format resume data into a PDF using LaTeX templates and return download URL.
     """
     try:
         data = request.get_json()
@@ -24,186 +19,49 @@ def format_resume():
         resume_data = data.get("resume_data")
         completed_resume_id = data.get("completed_resume_id")
         job_title = data.get("job_title", "Resume")
+        template_id = data.get("template_id", "default")
         
         if not resume_data:
             return jsonify({"error": "Missing resume_data"}), 400
         
-        # Generate PDF
-        pdf_buffer = BytesIO()
-        doc = SimpleDocTemplate(
-            pdf_buffer, 
-            pagesize=letter, 
-            rightMargin=72, leftMargin=72, 
-            topMargin=72, bottomMargin=18,
-            title=job_title,
-            author=f"{resume_data.get('first_name','')} {resume_data.get('last_name','')}".strip() or "Resume Generator",
-        )
+        # Initialize LaTeX compiler
+        latex_compiler = LaTeXCompiler()
         
-        # Build PDF content
-        story = []
-        styles = getSampleStyleSheet()
+        # Generate PDF using LaTeX
+        pdf_bytes = latex_compiler.generate_resume_pdf(resume_data, template_id)
         
-        # Custom styles
-        title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Heading1'],
-            fontSize=18,
-            spaceAfter=12,
-            alignment=1  # Center alignment
-        )
-        
-        heading_style = ParagraphStyle(
-            'CustomHeading',
-            parent=styles['Heading2'],
-            fontSize=14,
-            spaceAfter=6,
-            spaceBefore=12,
-            textColor=colors.black
-        )
-        
-        # Name
-        if resume_data.get("first_name") or resume_data.get("last_name"):
-            name = f"{resume_data.get('first_name', '')} {resume_data.get('last_name', '')}".strip()
-            story.append(Paragraph(name, title_style))
-            story.append(Spacer(1, 12))
-        
-        # Contact Information
-        contact = resume_data.get("contact", {})
-        if contact:
-            story.append(Paragraph("Contact Information", heading_style))
-            
-            # Handle different contact field structures
-            if isinstance(contact, dict):
-                for key, value in contact.items():
-                    if value:
-                        label = key.replace('_', ' ').title()
-                        if isinstance(value, list):
-                            value_str = ', '.join(str(v) for v in value)
-                        else:
-                            value_str = str(value)
-                        story.append(Paragraph(f"<b>{label}:</b> {value_str}", styles['Normal']))
-            
-            story.append(Spacer(1, 12))
-        
-        # Career Objective
-        if resume_data.get("career_objective"):
-            story.append(Paragraph("Career Objective", heading_style))
-            story.append(Paragraph(resume_data["career_objective"], styles['Normal']))
-            story.append(Spacer(1, 12))
-        
-        # Skills
-        skills = resume_data.get("skills", {})
-        if skills:
-            story.append(Paragraph("Skills", heading_style))
-            if isinstance(skills, dict):
-                for category, skill_list in skills.items():
-                    if skill_list:
-                        if isinstance(skill_list, list):
-                            skills_text = f"<b>{category.replace('_', ' ').title()}:</b> {', '.join(skill_list)}"
-                        else:
-                            skills_text = f"<b>{category.replace('_', ' ').title()}:</b> {skill_list}"
-                        story.append(Paragraph(skills_text, styles['Normal']))
-            elif isinstance(skills, list):
-                story.append(Paragraph(', '.join(skills), styles['Normal']))
-            else:
-                story.append(Paragraph(str(skills), styles['Normal']))
-            story.append(Spacer(1, 12))
-        
-        # Professional Experience
-        jobs = resume_data.get("jobs", [])
-        if jobs and isinstance(jobs, list):
-            story.append(Paragraph("Professional Experience", heading_style))
-            for job in jobs:
-                # Job title and company
-                job_title = job.get("title") or job.get("position", "")
-                company = job.get("company", "")
-                if job_title and company:
-                    story.append(Paragraph(f"<b>{job_title}</b> - {company}", styles['Normal']))
-                elif job_title:
-                    story.append(Paragraph(f"<b>{job_title}</b>", styles['Normal']))
-                elif company:
-                    story.append(Paragraph(f"<b>{company}</b>", styles['Normal']))
-                
-                # Location and dates
-                location = job.get("location", "")
-                start_date = job.get("start_date", "")
-                end_date = job.get("end_date", "Present")
-                
-                date_location = []
-                if location:
-                    date_location.append(location)
-                if start_date or end_date:
-                    date_location.append(f"{start_date} - {end_date}")
-                
-                if date_location:
-                    story.append(Paragraph(" | ".join(date_location), styles['Normal']))
-                
-                # Role summary
-                role_summary = job.get("role_summary") or job.get("summary") or job.get("description")
-                if role_summary:
-                    story.append(Paragraph(f"<i>{role_summary}</i>", styles['Normal']))
-                
-                # Responsibilities
-                responsibilities = job.get("responsibilities", [])
-                if responsibilities and isinstance(responsibilities, list):
-                    for resp in responsibilities:
-                        story.append(Paragraph(f"• {resp}", styles['Normal']))
-                
-                # Accomplishments
-                accomplishments = job.get("accomplishments", [])
-                if accomplishments and isinstance(accomplishments, list):
-                    for acc in accomplishments:
-                        story.append(Paragraph(f"• {acc}", styles['Normal']))
-                
-                story.append(Spacer(1, 12))
-        
-        # Education
-        education = resume_data.get("education", [])
-        if education and isinstance(education, list):
-            story.append(Paragraph("Education", heading_style))
-            for edu in education:
-                institution = edu.get("institution") or edu.get("school", "")
-                degree = edu.get("degree", "")
-                
-                if degree and institution:
-                    story.append(Paragraph(f"<b>{degree}</b> - {institution}", styles['Normal']))
-                elif degree:
-                    story.append(Paragraph(f"<b>{degree}</b>", styles['Normal']))
-                elif institution:
-                    story.append(Paragraph(f"<b>{institution}</b>", styles['Normal']))
-                
-                # Dates
-                start_date = edu.get("start_date", "")
-                end_date = edu.get("end_date") or edu.get("graduation_date", "")
-                if start_date or end_date:
-                    story.append(Paragraph(f"{start_date} - {end_date}", styles['Normal']))
-                
-                # GPA
-                gpa = edu.get("gpa") or edu.get("GPA")
-                if gpa:
-                    story.append(Paragraph(f"GPA: {gpa}", styles['Normal']))
-                
-                story.append(Spacer(1, 12))
-        
-        # Build the PDF
-        doc.build(story)
-        
-        # Get PDF bytes
-        pdf_bytes = pdf_buffer.getvalue()
-        pdf_buffer.close()
+        if not pdf_bytes:
+            return jsonify({"error": "Failed to generate PDF"}), 500
         
         # Return PDF as base64 data URL for immediate download
         pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
         download_url = f"data:application/pdf;base64,{pdf_base64}"
         
-        # Create filename from job title
-        safe_job_title = job_title.replace(' ', '_').replace('/', '_').replace('\\', '_')
-        filename = f"{safe_job_title}.pdf"
+        # Create filename from job title and candidate name
+        candidate_name = f"{resume_data.get('first_name', '')} {resume_data.get('last_name', '')}".strip()
+        if candidate_name:
+            safe_name = candidate_name.replace(' ', '_').replace('/', '_').replace('\\', '_')
+            filename = f"{safe_name}_{template_id}_resume.pdf"
+        else:
+            safe_job_title = job_title.replace(' ', '_').replace('/', '_').replace('\\', '_')
+            filename = f"{safe_job_title}_{template_id}_resume.pdf"
+        
+        # If completed_resume_id provided, update the document with the PDF URL
+        if completed_resume_id:
+            from db import completed_resumes_collection
+            from bson import ObjectId
+            
+            if ObjectId.is_valid(completed_resume_id):
+                completed_resumes_collection.update_one(
+                    {"_id": ObjectId(completed_resume_id), "user_id": request.user_id},
+                    {"$set": {"formatted_pdf_url": download_url, "formatted_filename": filename}}
+                )
         
         return jsonify({
             "message": "Resume formatted successfully",
             "downloadUrl": download_url,
-            "filename": filename
+            "filename": filename,
+            "template_used": template_id
         }), 200
         
     except Exception as e:
