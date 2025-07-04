@@ -23,12 +23,16 @@ def get_completed_resume(completed_resume_id):
         if not doc:
             return jsonify({"error": "Completed resume not found"}), 404
         
+        tailored_resume = doc.get("tailored_resume", {})
+        score = tailored_resume.get("score")
+        
         return jsonify({
             "_id": str(doc["_id"]),
             "job_title": doc["job_title"],
             "company": doc["company"],
             "created_at": doc["created_at"].isoformat(),
-            "tailored_resume": doc["tailored_resume"],
+            "tailored_resume": tailored_resume,
+            "score": score,
             "source_resume_ids": doc.get("source_resume_ids", []),
             "source_resume_names": doc.get("source_resume_names", []),
             "job_ad_data": doc["job_ad_data"]

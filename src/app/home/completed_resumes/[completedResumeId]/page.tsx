@@ -14,6 +14,7 @@ interface CompletedResume {
     source_resume_ids: string[];
     source_resume_names: string[];
     job_ad_data: any;
+    score?: number;
 }
 
 export default function CompletedResumePage() {
@@ -64,6 +65,12 @@ export default function CompletedResumePage() {
             <Title order={2} mb="md">
                 Tailored Resume for: {data.job_title} at {data.company}
             </Title>
+
+            {typeof data.score === "number" && (
+                <Text size = "lg" fw={700} color ="blue" mb="md">
+                    Match Score: {data.score} / 100
+                </Text>
+            )}
             
             <Text size="sm" color="dimmed" mb="xl">
                 Created: {new Date(data.created_at).toLocaleString()}
