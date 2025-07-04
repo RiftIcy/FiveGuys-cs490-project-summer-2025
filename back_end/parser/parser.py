@@ -203,7 +203,8 @@ class ResumeScorer:
                         
                         "SCORING CATEGORIES (each 0-20 points): "
                         "1. SKILLS_MATCH (0-20): How many required technical skills does the candidate have? "
-                        "   - 18-20: Has 90%+ of required skills, bonus for additional relevant skills "
+                        "If job posting has no specific skills listed or shows 'N/A' for qualifications, award 18-20 points. "
+                        "   - 18-20: Has 90%+ of required skills, bonus for additional relevant skills, OR job requires no specific skills "
                         "   - 15-17: Has 70-89% of required skills "
                         "   - 10-14: Has 50-69% of required skills "
                         "   - 5-9: Has 25-49% of required skills "
@@ -211,7 +212,8 @@ class ResumeScorer:
                         
                         "2. EXPERIENCE_RELEVANCE (0-20): How relevant is their work experience? "
                         "Focus ONLY on relevant experience. Irrelevant experience is NEUTRAL (not negative). "
-                        "   - 18-20: Has relevant experience that meets/exceeds requirements "
+                        "If job posting shows 'Required Experience: N/A' or similar, award 18-20 points. "
+                        "   - 18-20: Has relevant experience that meets/exceeds requirements OR job requires no specific experience "
                         "   - 15-17: Has some relevant experience, meets minimum requirements "
                         "   - 10-14: Has limited relevant experience, below requirements "
                         "   - 5-9: Has minimal relevant experience "
@@ -219,7 +221,8 @@ class ResumeScorer:
                         
                         "3. EDUCATION (0-20): Does education meet minimum requirements? "
                         "More education than required = POSITIVE, never negative. "
-                        "   - 18-20: Exceeds education requirements or has relevant advanced degrees "
+                        "If job posting shows 'Required Education: N/A' or similar, award 18-20 points. "
+                        "   - 18-20: Exceeds education requirements, has relevant advanced degrees, OR job requires no specific education "
                         "   - 15-17: Meets education requirements exactly "
                         "   - 10-14: Close to requirements (e.g., relevant bootcamp vs degree) "
                         "   - 5-9: Below requirements but has relevant experience compensation "
@@ -244,10 +247,16 @@ class ResumeScorer:
                         "- Diverse backgrounds and transferable skills are STRENGTHS "
                         "- Only penalize for what's MISSING, never for what's 'extra' "
                         "- Consider career changers and non-traditional paths as having valuable diverse perspectives "
+                        "- When job requirements are 'N/A', 'None', 'Not specified', empty, or similar, award FULL POINTS (18-20) for that category "
+                        "- If required_experience is 'N/A' or not specified, award 18-20 points for EXPERIENCE_RELEVANCE "
+                        "- If required_education is 'N/A' or not specified, award 18-20 points for EDUCATION "
+                        "- If required_skills/qualifications are 'N/A' or not specified, award 18-20 points for SKILLS_MATCH "
+                        "- Check the job posting data carefully - if any requirement field is missing or shows N/A, give full credit "
+                        "- If qualifications list is empty or contains only 'N/A', award 18-20 points for SKILLS_MATCH "
                         
                         "Return JSON with: "
                         "{ "
-                        "  \"overall_score\": <sum of all category scores>, "
+                        "  \"overall_score\": <MUST be the exact sum of all 5 category scores below>, "
                         "  \"category_scores\": { "
                         "    \"skills_match\": <0-20>, "
                         "    \"experience_relevance\": <0-20>, "
@@ -260,6 +269,7 @@ class ResumeScorer:
                         "  \"transferable_skills\": [\"list of transferable skills from other domains\"] "
                         "} "
                         
+                        "CRITICAL: The overall_score MUST equal skills_match + experience_relevance + education + keyword_alignment + impact_achievements. "
                         "Output only valid JSON."
                     )
                 },
@@ -270,7 +280,23 @@ class ResumeScorer:
             ],
             temperature=0.1,
         )
-        return json.loads(resp.choices[0].message.content)
+        
+        # Parse the response and fix the math
+        result = json.loads(resp.choices[0].message.content)
+        
+        # Ensure the overall score is the correct sum of category scores
+        if "category_scores" in result:
+            category_scores = result["category_scores"]
+            correct_overall_score = (
+                category_scores.get("skills_match", 0) +
+                category_scores.get("experience_relevance", 0) +
+                category_scores.get("education", 0) +
+                category_scores.get("keyword_alignment", 0) +
+                category_scores.get("impact_achievements", 0)
+            )
+            result["overall_score"] = correct_overall_score
+        
+        return result
 
 
 class ResumeAdviceGenerator:
@@ -320,9 +346,13 @@ class ResumeAdviceGenerator:
                         "ADVICE CATEGORIES: "
                         "1. CONTENT_IMPROVEMENTS: How to better present existing experience "
                         "2. KEYWORD_OPTIMIZATION: How to incorporate job posting language naturally "
-                        "3. FORMATTING_TIPS: Structure and presentation improvements "
-                        "4. SKILL_DEVELOPMENT: Specific skills to develop (based on gaps identified) "
-                        "5. EXPERIENCE_HIGHLIGHTING: How to emphasize relevant experience better "
+                        "3. SKILL_DEVELOPMENT: Specific skills to develop (based on gaps identified) "
+                        "4. EXPERIENCE_HIGHLIGHTING: How to emphasize relevant experience better "
+                        
+                        "DO NOT PROVIDE FORMATTING ADVICE: "
+                        "- Do NOT suggest formatting changes like bullet points, layout, or visual structure "
+                        "- Do NOT suggest organizing content into sections or lists "
+                        "- The system handles all formatting automatically through professional templates "
                         
                         "Return JSON with: "
                         "{ "
@@ -331,7 +361,6 @@ class ResumeAdviceGenerator:
                         "  \"improvement_areas\": { "
                         "    \"content_improvements\": [\"specific content suggestions\"], "
                         "    \"keyword_optimization\": [\"specific keyword suggestions\"], "
-                        "    \"formatting_tips\": [\"specific formatting improvements\"], "
                         "    \"skill_development\": [\"specific skills to develop\"], "
                         "    \"experience_highlighting\": [\"ways to better present experience\"] "
                         "  }, "
