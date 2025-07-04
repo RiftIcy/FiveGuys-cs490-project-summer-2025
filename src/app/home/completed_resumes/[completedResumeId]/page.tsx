@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Container, Title, Loader, Text, Stack, Card, List, Group, Divider, Button, Tooltip, Modal, Collapse } from "@mantine/core";
+import { Container, Title, Loader, Text, Stack, Card, List, Group, Divider, Button, Tooltip, Modal, Collapse, RingProgress } from "@mantine/core";
 import { useParams, useRouter } from "next/navigation";
 import { getAuth } from "firebase/auth";
 import { IconChevronDown, IconChevronUp } from "@tabler/icons-react";
@@ -42,6 +42,14 @@ export default function CompletedResumePage() {
     const [adviceLoading, setAdviceLoading] = useState(false);
     const [showAdviceModal, setShowAdviceModal] = useState(false);
     const [scoreDetailsOpen, setScoreDetailsOpen] = useState(false);
+    const [animatedOverallScore, setAnimatedOverallScore] = useState(0);
+    const [animatedCategoryScores, setAnimatedCategoryScores] = useState({
+        skills_match: 0,
+        experience_relevance: 0,
+        education: 0,
+        keyword_alignment: 0,
+        impact_achievements: 0,
+    });
 
     const getAuthHeaders = async () => {
         const auth = getAuth();
@@ -75,6 +83,76 @@ export default function CompletedResumePage() {
             fetchCompletedResume();
         }
     }, [completedResumeId]);
+
+    // Animate main score when data loads
+    useEffect(() => {
+        if (data?.score_data?.overall_score || data?.score) {
+            const targetScore = data.score_data?.overall_score || data.score || 0;
+            const duration = 1500; // 1.5 seconds
+            const startTime = performance.now();
+            let animationId: number;
+
+            const animate = (currentTime: number) => {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Use easing function for smoother animation
+                const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+                const currentValue = Math.round(targetScore * easeOutQuart);
+                
+                setAnimatedOverallScore(currentValue);
+
+                if (progress < 1) {
+                    animationId = requestAnimationFrame(animate);
+                }
+            };
+
+            animationId = requestAnimationFrame(animate);
+            return () => cancelAnimationFrame(animationId);
+        }
+    }, [data]);
+
+    // Animate category scores when collapse opens
+    useEffect(() => {
+        if (scoreDetailsOpen && data?.score_data?.category_scores) {
+            const targetScores = data.score_data.category_scores;
+            const duration = 1200; // 1.2 seconds
+            const startTime = performance.now();
+            let animationId: number;
+
+            const animate = (currentTime: number) => {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Use easing function for smoother animation
+                const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+
+                setAnimatedCategoryScores({
+                    skills_match: Math.round(targetScores.skills_match * easeOutQuart),
+                    experience_relevance: Math.round(targetScores.experience_relevance * easeOutQuart),
+                    education: Math.round(targetScores.education * easeOutQuart),
+                    keyword_alignment: Math.round(targetScores.keyword_alignment * easeOutQuart),
+                    impact_achievements: Math.round(targetScores.impact_achievements * easeOutQuart)
+                });
+
+                if (progress < 1) {
+                    animationId = requestAnimationFrame(animate);
+                }
+            };
+
+            animationId = requestAnimationFrame(animate);
+            return () => cancelAnimationFrame(animationId);
+        } else if (!scoreDetailsOpen) {
+            // Reset category scores when collapse closes
+            setAnimatedCategoryScores({
+                skills_match: 0,
+                experience_relevance: 0,
+                education: 0,
+                keyword_alignment: 0,
+                impact_achievements: 0
+            });
+        }
+    }, [scoreDetailsOpen, data?.score_data?.category_scores]);
 
     const handleQuickFormat = async () => {
         try {
@@ -133,6 +211,34 @@ export default function CompletedResumePage() {
         }
     };
 
+    // Helper functions for score visualization
+    const getScoreColor = (score: number) => {
+        if (score >= 90) return 'green';
+        if (score >= 80) return 'teal';
+        if (score >= 70) return 'blue';
+        if (score >= 60) return 'yellow';
+        if (score >= 50) return 'orange';
+        return 'red';
+    };
+
+    const getScoreRange = (score: number) => {
+        if (score >= 90) return 'Excellent match';
+        if (score >= 80) return 'Strong match';
+        if (score >= 70) return 'Good match';
+        if (score >= 60) return 'Fair match';
+        if (score >= 50) return 'Weak match';
+        return 'Poor match';
+    };
+
+    const getCategoryColor = (score: number, maxScore: number) => {
+        const percentage = (score / maxScore) * 100;
+        if (percentage >= 90) return 'green';
+        if (percentage >= 70) return 'teal';
+        if (percentage >= 50) return 'blue';
+        if (percentage >= 30) return 'yellow';
+        return 'red';
+    };
+
     if (loading) return <Container><Loader /></Container>;
     if (error || !data) return <Container><Text color="red">Error loading data</Text></Container>;
 
@@ -147,9 +253,31 @@ export default function CompletedResumePage() {
                     <Stack gap="md">
                         <Group justify="space-between" align="center">
                             <Group gap="md" align="center">
-                                <Text size="lg" fw={700} color="blue">
-                                    Match Score: {data.score_data?.overall_score || data.score || 0} / 100
-                                </Text>
+                                {/* Circular Progress Score */}
+                                <RingProgress
+                                    size={80}
+                                    thickness={8}
+                                    sections={[
+                                        {                                            value: animatedOverallScore,
+                                            color: getScoreColor(animatedOverallScore)
+                                        }
+                                    ]}
+                                    label={
+                                        <Text c="dimmed" fw={700} ta="center" size="lg">
+                                            {animatedOverallScore}
+                                        </Text>
+                                    }
+                                />
+                                
+                                <div>
+                                    <Text size="lg" fw={700} color="blue">
+                                        Match Score
+                                    </Text>
+                                    <Text size="sm" c="dimmed">
+                                        {getScoreRange(animatedOverallScore)}
+                                    </Text>
+                                </div>
+                                
                                 <Button
                                     variant="subtle"
                                     size="xs"
@@ -188,9 +316,26 @@ export default function CompletedResumePage() {
                                                 multiline
                                                 w={250}
                                             >
-                                                <Text size="sm" style={{ cursor: 'help', textDecoration: 'underline dotted' }}>
-                                                    Skills: {data.score_data.category_scores.skills_match}/20
-                                                </Text>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'help' }}>
+                                                    <RingProgress
+                                                        size={40}
+                                                        thickness={4}
+                                                        sections={[
+                                                            { 
+                                                                value: (animatedCategoryScores.skills_match / 20) * 100, 
+                                                                color: getCategoryColor(animatedCategoryScores.skills_match, 20)
+                                                            }
+                                                        ]}
+                                                        label={
+                                                            <Text c="dimmed" fw={600} ta="center" size="xs">
+                                                                {animatedCategoryScores.skills_match}
+                                                            </Text>
+                                                        }
+                                                    />
+                                                    <Text size="sm" style={{ textDecoration: 'underline dotted' }}>
+                                                        Skills
+                                                    </Text>
+                                                </div>
                                             </Tooltip>
                                             
                                             <Tooltip 
@@ -199,9 +344,26 @@ export default function CompletedResumePage() {
                                                 multiline
                                                 w={250}
                                             >
-                                                <Text size="sm" style={{ cursor: 'help', textDecoration: 'underline dotted' }}>
-                                                    Experience: {data.score_data.category_scores.experience_relevance}/20
-                                                </Text>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'help' }}>
+                                                    <RingProgress
+                                                        size={40}
+                                                        thickness={4}
+                                                        sections={[
+                                                            { 
+                                                                value: (animatedCategoryScores.experience_relevance / 20) * 100, 
+                                                                color: getCategoryColor(animatedCategoryScores.experience_relevance, 20)
+                                                            }
+                                                        ]}
+                                                        label={
+                                                            <Text c="dimmed" fw={600} ta="center" size="xs">
+                                                                {animatedCategoryScores.experience_relevance}
+                                                            </Text>
+                                                        }
+                                                    />
+                                                    <Text size="sm" style={{ textDecoration: 'underline dotted' }}>
+                                                        Experience
+                                                    </Text>
+                                                </div>
                                             </Tooltip>
                                             
                                             <Tooltip 
@@ -210,9 +372,26 @@ export default function CompletedResumePage() {
                                                 multiline
                                                 w={250}
                                             >
-                                                <Text size="sm" style={{ cursor: 'help', textDecoration: 'underline dotted' }}>
-                                                    Education: {data.score_data.category_scores.education}/20
-                                                </Text>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'help' }}>
+                                                    <RingProgress
+                                                        size={40}
+                                                        thickness={4}
+                                                        sections={[
+                                                            { 
+                                                                value: (animatedCategoryScores.education / 20) * 100, 
+                                                                color: getCategoryColor(animatedCategoryScores.education, 20)
+                                                            }
+                                                        ]}
+                                                        label={
+                                                            <Text c="dimmed" fw={600} ta="center" size="xs">
+                                                                {animatedCategoryScores.education}
+                                                            </Text>
+                                                        }
+                                                    />
+                                                    <Text size="sm" style={{ textDecoration: 'underline dotted' }}>
+                                                        Education
+                                                    </Text>
+                                                </div>
                                             </Tooltip>
                                             
                                             <Tooltip 
@@ -221,9 +400,26 @@ export default function CompletedResumePage() {
                                                 multiline
                                                 w={250}
                                             >
-                                                <Text size="sm" style={{ cursor: 'help', textDecoration: 'underline dotted' }}>
-                                                    Keywords: {data.score_data.category_scores.keyword_alignment}/20
-                                                </Text>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'help' }}>
+                                                    <RingProgress
+                                                        size={40}
+                                                        thickness={4}
+                                                        sections={[
+                                                            { 
+                                                                value: (animatedCategoryScores.keyword_alignment / 20) * 100, 
+                                                                color: getCategoryColor(animatedCategoryScores.keyword_alignment, 20)
+                                                            }
+                                                        ]}
+                                                        label={
+                                                            <Text c="dimmed" fw={600} ta="center" size="xs">
+                                                                {animatedCategoryScores.keyword_alignment}
+                                                            </Text>
+                                                        }
+                                                    />
+                                                    <Text size="sm" style={{ textDecoration: 'underline dotted' }}>
+                                                        Keywords
+                                                    </Text>
+                                                </div>
                                             </Tooltip>
                                             
                                             <Tooltip 
@@ -232,9 +428,26 @@ export default function CompletedResumePage() {
                                                 multiline
                                                 w={250}
                                             >
-                                                <Text size="sm" style={{ cursor: 'help', textDecoration: 'underline dotted' }}>
-                                                    Impact: {data.score_data.category_scores.impact_achievements}/20
-                                                </Text>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'help' }}>
+                                                    <RingProgress
+                                                        size={40}
+                                                        thickness={4}
+                                                        sections={[
+                                                            { 
+                                                                value: (animatedCategoryScores.impact_achievements / 20) * 100, 
+                                                                color: getCategoryColor(animatedCategoryScores.impact_achievements, 20)
+                                                            }
+                                                        ]}
+                                                        label={
+                                                            <Text c="dimmed" fw={600} ta="center" size="xs">
+                                                                {animatedCategoryScores.impact_achievements}
+                                                            </Text>
+                                                        }
+                                                    />
+                                                    <Text size="sm" style={{ textDecoration: 'underline dotted' }}>
+                                                        Impact
+                                                    </Text>
+                                                </div>
                                             </Tooltip>
                                         </Group>
                                     </div>
