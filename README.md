@@ -111,3 +111,16 @@ npm run dev
 ```
 
 The app should be available at [http://localhost:3000](http://localhost:3000).
+
+---
+
+### **Step 7: Start the Backend Server**
+
+In a new terminal, start the backend server:
+
+```bash
+python back_end/app.py
+```
+
+This will launch the backend API required for the app to function.
+
